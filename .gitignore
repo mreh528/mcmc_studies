@@ -1,0 +1,21 @@
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+### The above ignores all files without an extension (e.g. executables, makefiles)
+
+# Ignore compilation output
+*.o
+*.so
+*.a
+
+# Ignore analysis output
+*.root
+*.pdf
+*.png
+
+# Ignore eberything in build except CMakeLists
+build/*
+
