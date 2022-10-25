@@ -11,6 +11,7 @@
 #include "mcmc.h"
 #include "Covariance.h"
 #include "CommandHandler.h"
+#include "ConfigManager.h"
 
 #include <iostream>
 #include <string>
@@ -21,8 +22,11 @@ using namespace std;
 int main(int argc, char* argv[]) {
 
     CommandHandler handler(argc, argv);
+    ConfigManager configs;
+    if (handler.fname_config) { configs.readConfig(handler.fname_config.Data()); }
 
     std::cout << "Hello World!" << std::endl;
+    std::cout << configs.getNSteps() << std::endl;
 
     return 0;
 }

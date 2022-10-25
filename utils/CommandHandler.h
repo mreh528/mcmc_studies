@@ -16,7 +16,6 @@ public:
     TString fname_config;
     bool verbose;
 private:
-    //ProcessCmdLine(int argc, char* argv[]);
 };
 
 #endif

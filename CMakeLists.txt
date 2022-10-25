@@ -17,7 +17,7 @@ set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 # Compiler configs
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -std=c++11 -m64")
 
-# Giles that need to be included in all executables
+# Files that need to be included in all executables
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 
 # Files that need to be included only in specific ("target") executables
