@@ -22,8 +22,14 @@ using namespace std;
 int main(int argc, char* argv[]) {
 
     CommandHandler handler(argc, argv);
+    covariance* covmat = new covariance();
+    std::cout << "Generating test vector..." << std::endl;
+    TVectorD* test_vec = covmat->GetRandomMeanVec(10);
+    for (int i = 0; i < 10; ++i) {
+        std::cout << "Entry " << i << ": " << (*test_vec)(i) << std::endl;
+    }
     
-    std::cout << "Hello World!" << std::endl;
+    std::cout << "\n\nHello World!" << std::endl;
 
     return 0;
 }
