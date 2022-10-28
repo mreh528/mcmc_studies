@@ -26,7 +26,8 @@ int main(int argc, char* argv[]) {
     if (handler.fname_config) { configs.readConfig(handler.fname_config.Data()); }
 
     std::cout << "Hello World!" << std::endl;
-    std::cout << configs.getNSteps() << std::endl;
+    mcmc* markov_chain = new mcmc(&configs);
+    delete markov_chain;
 
     return 0;
 }

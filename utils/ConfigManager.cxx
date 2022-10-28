@@ -18,7 +18,7 @@ ConfigManager::ConfigManager(const char* fname) {
     nsteps = -1;
     npars = -1;
     run_number = -1;
-    nbranches = -1;
+    nbranch = -1;
     epsilon = -1.;
 
     // Now read set values from config
@@ -90,10 +90,10 @@ int ConfigManager::readConfig(const char* fname) {
                 std::getline(line_stream, key);
                 run_number = std::stoi(key);
             }
-            else if (key == "BRANCHES") { 
+            else if (key == "BRANCH") { 
                 std::getline(line_stream, key, ' '); // burn the '='
                 std::getline(line_stream, key);
-                nbranches = std::stoi(key);
+                nbranch = std::stoi(key);
             }
             else if (key == "EPSILON") { 
                 std::getline(line_stream, key, ' '); // burn the '='

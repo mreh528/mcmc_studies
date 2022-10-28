@@ -30,6 +30,7 @@ public:
     TVectorD* GetMeanVec() { return mean_vec; }
     TMatrixDSym* GetCovMat() { return cov_mat; }
     int GetNDims() { return ndims; }
+
 private:
     TString* branch_names;
     double* branch_values;

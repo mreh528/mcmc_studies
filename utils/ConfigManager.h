@@ -16,18 +16,18 @@ public:
 
     int readConfig(const char* fname);
 
-    std::string getOutputDirectory() { return output_directory; }
-    std::string getMCMCFileBase() { return mcmc_file_base; }
-    std::string getCovmatFileBase() { return covmat_file_base; }
-    std::string getInputDirectory() { return input_directory; }
+    std::string GetOutputDirectory() { return output_directory; }
+    std::string GetMCMCFileBase() { return mcmc_file_base; }
+    std::string GetCovmatFileBase() { return covmat_file_base; }
+    std::string GetInputDirectory() { return input_directory; }
 
-    bool getNewChainFlg() { return new_chain; }
+    bool GetNewChainFlg() { return new_chain; }
 
-    int getNSteps() { return nsteps; }
-    int getNPars() { return npars; }
-    double getEpsilon() { return epsilon; }
-    int getRunNumber() { return run_number; }
-    int getNBranches() { return nbranches; }
+    int GetNSteps() { return nsteps; }
+    int GetNPars() { return npars; }
+    double GetEpsilon() { return epsilon; }
+    int GetRunNumber() { return run_number; }
+    int GetNBranch() { return nbranch; }
 private:
     std::string output_directory;
     std::string mcmc_file_base;
@@ -40,7 +40,7 @@ private:
     int npars;
     double epsilon;
     int run_number;
-    int nbranches;
+    int nbranch;
 };
 
 #endif
