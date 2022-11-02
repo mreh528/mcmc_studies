@@ -9,17 +9,23 @@
 covariance::covariance() {
     ndims = -1;
     nsteps = -1;
+    branch_names = NULL;
+    branch_values = NULL;
+    mcmc_file = NULL;
+    cov_file = NULL;
     mcmc_chain = NULL;
     mean_vec = NULL;
     cov_mat = NULL;
+    mean_vec_prev = NULL;
+    cov_mat_prev = NULL;
     chain_loaded = false;
 
-    std::cout << "Warning: Default constructor used. Most variables will be uninitialized." << std::endl;
+    std::cout << "Warning: Covariance default constructor used. Most variables will be uninitialized." << std::endl;
 }
 
 
 // Constructor with only the parameter count specified
-covariance::covariance(int npars, char* fname) {
+covariance::covariance(int npars) {
     // Make sure we don't get bad input
     if (npars < 1) {
         std::cout << "ERROR: invalid number of parameters specified: " << npars << std::endl;
@@ -28,7 +34,6 @@ covariance::covariance(int npars, char* fname) {
 
     // Initialize
     SetDim(npars);
-    LoadChain(fname);
 
     // Ensure all values are initialized at 0 instead of memory junk
     mean_vec->Zero();
@@ -38,10 +43,15 @@ covariance::covariance(int npars, char* fname) {
 
 // Destructor
 covariance::~covariance() {
-    delete branch_names;
-    delete branch_values;
-    delete mean_vec;
-    delete cov_mat;
+    if (branch_names) { delete branch_names; }
+    if (branch_values) { delete branch_values; }
+    if (mcmc_chain) { delete mcmc_chain; }
+    if (mean_vec) { delete mean_vec; }
+    if (cov_mat) { delete cov_mat; }
+    if (mean_vec_prev) { delete mean_vec_prev; }
+    if (cov_mat_prev) { delete cov_mat_prev; }
+    if (cov_file) { cov_file->Close(); }
+    if (mcmc_file) { mcmc_file->Close(); }
 }
 
 
@@ -60,17 +70,18 @@ void covariance::SetDim(int npars) {
     mean_vec  = new TVectorD(ndims);
     cov_mat  = new TMatrixDSym(ndims);
 
+    // Wait to see if we have an input covariance file for these
+    mean_vec_prev = NULL;
+    cov_mat_prev = NULL;
+
     return;
 }
 
 
 // Load MCMC chain from file
-void covariance::LoadChain(char* fname) {
+void covariance::LoadChain(TString mcmc_fname) {
     // Watch out for bad input
-    if (!fname) {
-        std::cout << "Forgot to specify file name: " << fname << std::endl;
-        exit(EXIT_FAILURE);
-    } else if (ndims < 1) {
+    if (ndims < 1) {
         std::cout << "ERROR: invalid number of dimensions specified: " << ndims << std::endl;
         std::cout << "Did you use the correct constructor?" << std::endl;
         exit(EXIT_FAILURE);
@@ -79,23 +90,48 @@ void covariance::LoadChain(char* fname) {
     chain_loaded = false;
 
     // Load mcmc posteriors chain from file
-    mcmc_chain = new TChain("posteriors");
-    mcmc_chain->Add(fname);
+    mcmc_file = new TFile(mcmc_fname.Data(), "READ");
+    if (!mcmc_file->IsOpen()) {
+        std::cout << "ERROR: Invalid input file name " << mcmc_file->GetName() << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     // Prepare branches for loading
+    std::cout << "Loading MCMC chain from " << mcmc_file->GetName() << std::endl;
+    mcmc_chain = (TTree*)mcmc_file->Get("posteriors");
     TObjArray* branch_list = (TObjArray*)mcmc_chain->GetListOfBranches();
     int nbranches = branch_list->GetEntries();
 
     // Set branch addresses so we can load them easily
     for (int ibr = 0; ibr < nbranches; ++ibr) {
         TBranch* br = (TBranch*)branch_list->At(ibr);
-        branch_names[ibr] = br->GetName();
-        mcmc_chain->SetBranchAddress(branch_names[ibr], &branch_values[ibr]);
+        TString bname = br->GetName();
+        for (int idim = 0; idim < ndims; ++idim) {
+            if (bname.CompareTo(Form("mcmc_par_%d",idim))==0) {
+                branch_names[idim] = br->GetName();
+                mcmc_chain->SetBranchAddress(branch_names[idim].Data(), &branch_values[idim]);
+                break;
+            }
+        }
     }
 
     chain_loaded = true;
 
     return;
+}
+
+
+// Load a previous covariance matrix file
+void covariance::LoadCovPrev(TString cov_fname) {
+
+    cov_file = new TFile(cov_fname.Data(), "READ");
+    if (!cov_file->IsOpen()) {
+        std::cout << "ERROR: could not open input covariance file" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    mean_vec_prev = (TVectorD*)cov_file->Get("mean_vec");
+    cov_mat_prev = (TMatrixDSym*)cov_file->Get("cov_mat");
 }
 
 
@@ -114,20 +150,20 @@ void covariance::CalcCovariance() {
     // First need means in order to calculate covariance
     CalcMeans();
 
+    // Make sure everything is reset
+    cov_mat->Zero();
+
     // Loop through all entries in the chain to calculate the covariance matrix
     nsteps = mcmc_chain->GetEntries();
     for (int ientry = 0; ientry < nsteps; ++ientry) {
         mcmc_chain->GetEntry(ientry);
         for (int ibr = 0; ibr < ndims; ++ibr) {
             for (int jbr = ibr; jbr < ndims; ++jbr) { // Symmetric Matrix
-                (*cov_mat)(ibr,jbr) += (branch_values[ibr] - (*mean_vec)[ibr]) \
-                                     * (branch_values[jbr] - (*mean_vec)[jbr]);
+                (*cov_mat)(ibr,jbr) += (branch_values[ibr] - (*mean_vec)(ibr)) \
+                                     * (branch_values[jbr] - (*mean_vec)(jbr)) / (double)nsteps;
             }
         }
     }
-
-    // Normalize the matrix
-    *cov_mat *= 1./(double)nsteps;
 
     return;
 }
@@ -135,7 +171,7 @@ void covariance::CalcCovariance() {
 
 // Updates the value of an input covariance matrix using some loaded set of data.
 // Must have previously loaded the data using LoadChain()
-TMatrixDSym* covariance::UpdateCovariance(TMatrixDSym* cov_mat_prev, TVectorD* mean_vec_prev, int nsteps_prev) {
+TMatrixDSym* covariance::UpdateCovariance(int nsteps_prev) {
     if (!chain_loaded) {
         std::cout << "ERROR: Chain of new data not loaded. "
                   << "Cannot update input covmat until LoadChain() is called." << std::endl;
@@ -158,7 +194,7 @@ TMatrixDSym* covariance::UpdateCovariance(TMatrixDSym* cov_mat_prev, TVectorD* m
     }
     *mean_mat *= ((double)nsteps*(double)nsteps_prev) \
                    / ((double)(nsteps+nsteps_prev-1)*(double)(nsteps+nsteps_prev));
-    
+
     // Add together the three matrices to finish the weighted average
     *new_cov += (*cov_mat_prev);
     *new_cov += (*mean_mat);
@@ -179,17 +215,17 @@ void covariance::CalcMeans() {
         exit(EXIT_FAILURE);
     }
 
+    // Make sure everything is reset
+    mean_vec->Zero();
+
     // Loop through all entries in the chain to calculate the mean of each par
     nsteps = mcmc_chain->GetEntries();
     for (int ientry = 0; ientry < nsteps; ++ientry) {
         mcmc_chain->GetEntry(ientry);
         for (int ibr = 0; ibr < ndims; ++ibr) {
-            (*mean_vec)(ibr) += branch_values[ibr];
+            (*mean_vec)(ibr) += branch_values[ibr]/(double)nsteps;
         }
     }
-
-    // Normalize vector
-    *mean_vec *= 1./(double)nsteps;
 
     return;
 }
@@ -197,7 +233,7 @@ void covariance::CalcMeans() {
 
 // Updates the values of an input mean vector using some loaded set of data.
 // Must have loaded the data previously using LoadChain()
-TVectorD* covariance::UpdateMeans(TVectorD* mean_vec_prev, int nsteps_prev) {
+TVectorD* covariance::UpdateMeans(int nsteps_prev) {
     if (!chain_loaded) {
         std::cout << "ERROR: Chain of new data not loaded. "
                   << "Cannot update input means until LoadChain() is called." << std::endl;
@@ -223,12 +259,13 @@ TMatrixDSym* covariance::GetRandomCovMat(int npars) {
     rng->SetSeed(); // Defaults to a random seed
     for (int i = 0; i < npars; ++i) {
         for (int j = i; j < npars; ++j) {
-            (*rand_cov)(i,j) = rng->Gaus(0., 10.);
+            (*rand_cov)(i,j) = rng->Gaus(0., 5.);
         }
     }
 
     // Have to multiply by transpose to guarantee positive definite
-    rand_cov->TMult(rand_cov->T());
+    TMatrixDSym* tmp = (TMatrixDSym*)rand_cov->Clone();
+    rand_cov->TMult(tmp->T());
     return rand_cov;
 }
 

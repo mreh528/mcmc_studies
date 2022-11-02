@@ -11,6 +11,8 @@ CommandHandler::CommandHandler(int argc, char* argv[]) {
     fname_out = "test.root";
     fname_config = "";
     verbose = false;
+    nrun = -1;
+    nbranch = -1;
 
     for (int iarg = 0; iarg < argc; ++iarg) {
         // Print usage message
@@ -40,6 +42,14 @@ CommandHandler::CommandHandler(int argc, char* argv[]) {
         // Verbosity
         else if (std::string(argv[iarg]) == "-v" || std::string(argv[iarg]) == "--verbose") {
             verbose = true;
+        }
+        // MCMC run number
+        else if (std::string(argv[iarg]) == "-r" || std::string(argv[iarg]) == "--run") {
+            nrun = atoi(argv[++iarg]);
+        }
+        // MCMC branch number
+        else if (std::string(argv[iarg]) == "-b" || std::string(argv[iarg]) == "--branch") {
+            nbranch = atoi(argv[++iarg]);
         }
         // Default
         else {

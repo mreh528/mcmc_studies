@@ -16,31 +16,32 @@ public:
 
     int readConfig(const char* fname);
 
-    std::string GetOutputDirectory() { return output_directory; }
-    std::string GetMCMCFileBase() { return mcmc_file_base; }
-    std::string GetCovmatFileBase() { return covmat_file_base; }
-    std::string GetInputDirectory() { return input_directory; }
+    std::string GetOutDir() { return main_output_directory; }
+    std::string GetChainDir() { return main_output_directory + chain_directory; }
+    std::string GetProposalCovDir() { return main_output_directory + proposal_cov_directory; }
+    std::string GetTargetCovDir() { return main_output_directory + target_cov_directory; }
+    std::string GetPlotDir() { return main_output_directory + plot_directory; }
 
-    bool GetNewChainFlg() { return new_chain; }
+    std::string GetMCMCFileBase() { return mcmc_file_base; }
+    std::string GetTargetCovFileBase() { return covmat_file_base; }
+    std::string GetProposalCovFileBase() { return covmat_file_base; }
 
     int GetNSteps() { return nsteps; }
     int GetNPars() { return npars; }
     double GetEpsilon() { return epsilon; }
-    int GetRunNumber() { return run_number; }
-    int GetNBranch() { return nbranch; }
 private:
-    std::string output_directory;
+    std::string main_output_directory;
+    std::string chain_directory;
+    std::string proposal_cov_directory;
+    std::string target_cov_directory;
+    std::string plot_directory;
+
     std::string mcmc_file_base;
     std::string covmat_file_base;
-    std::string input_directory;
-
-    bool new_chain;
 
     int nsteps;
     int npars;
     double epsilon;
-    int run_number;
-    int nbranch;
 };
 
 #endif

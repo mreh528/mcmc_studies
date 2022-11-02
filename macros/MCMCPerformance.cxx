@@ -22,12 +22,14 @@ using namespace std;
 int main(int argc, char* argv[]) {
 
     CommandHandler handler(argc, argv);
-    ConfigManager configs;
-    if (handler.fname_config) { configs.readConfig(handler.fname_config.Data()); }
+    ConfigManager configs(handler.fname_config.Data());
 
-    std::cout << "Hello World!" << std::endl;
-    mcmc* markov_chain = new mcmc(&configs);
-    delete markov_chain;
+    std::cout << "Creating MCMC using configs specified in " << handler.fname_config.Data() << std::endl;
+    mcmc* markov_chain = new mcmc(&configs, handler.GetRunNumber(), handler.GetBranchNumber());
 
+    std::cout << "Starting MCMC" << std::endl;
+    markov_chain->RunMCMC();
+
+    std::cout << "Finished!\n" << std::endl;
     return 0;
 }

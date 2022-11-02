@@ -3,7 +3,9 @@
 
 #include "TMath.h"
 #include "TRandom3.h"
+#include "TFile.h"
 #include "TChain.h"
+#include "TTree.h"
 #include "TObjArray.h"
 #include "TVectorD.h"
 #include "TMatrixDSym.h"
@@ -14,15 +16,16 @@
 class covariance {
 public:
     covariance();
-    covariance(int npars, char* fname);
+    covariance(int npars);
     ~covariance();
 
     void SetDim(int npars);
-    void LoadChain(char* fname);
+    void LoadChain(TString mcmc_fname);
+    void LoadCovPrev(TString cov_fname);
     void CalcCovariance();
-    TMatrixDSym* UpdateCovariance(TMatrixDSym* cov_mat_prev, TVectorD* mean_vec_prev, int nsteps_prev);
+    TMatrixDSym* UpdateCovariance(int nsteps_prev);
     void CalcMeans();
-    TVectorD* UpdateMeans(TVectorD* mean_vec_prev, int nsteps_prev);
+    TVectorD* UpdateMeans(int nsteps_prev);
 
     TMatrixDSym* GetRandomCovMat(int npars);
     TVectorD* GetRandomMeanVec(int npars);
@@ -34,13 +37,17 @@ public:
 private:
     TString* branch_names;
     double* branch_values;
-    TChain* mcmc_chain;
+    TFile* mcmc_file;
+    TFile* cov_file;
+    TTree* mcmc_chain;
     bool chain_loaded;
     int nsteps;
 
     int ndims;
     TVectorD* mean_vec;
     TMatrixDSym* cov_mat;
+    TVectorD* mean_vec_prev;
+    TMatrixDSym* cov_mat_prev;
 };
 
 #endif
