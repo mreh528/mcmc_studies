@@ -1,7 +1,5 @@
 /*
- * Macro for creating a randomized dxd covariance matrix
- * in d dimensions, as well as a corresponding random
- * vector of means in d dimensions
+ * Macro for updating the proposal covariance matrix for a MCMC
  */
 
 #include "TMath.h"
@@ -32,17 +30,19 @@ int main(int argc, char* argv[]) {
     }
 
     // Load our inputs based on the config file
-    TString input_mcmc_fname = Form("%s%s_npars%d_branch%d_run%d.root",\
+    TString input_mcmc_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                                     configs.GetChainDir().c_str(),\
                                     configs.GetMCMCFileBase().c_str(),\
+                                    configs.GetNSteps(),\
                                     configs.GetNPars(),\
                                     handler.GetBranchNumber(),\
                                     handler.GetRunNumber());
     TString input_cov_fname = "";
     if (handler.GetRunNumber() > 0) {
-        input_cov_fname = Form("%s%s_npars%d_branch%d_run%d.root",\
+        input_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                                configs.GetProposalCovDir().c_str(),\
                                configs.GetProposalCovFileBase().c_str(),\
+                               configs.GetNSteps(),\
                                configs.GetNPars(),\
                                handler.GetBranchNumber(),\
                                handler.GetRunNumber()-1);
@@ -71,9 +71,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Write covariance matrix to file
-    TFile* output_cov_file = new TFile(Form("%s%s_npars%d_branch%d_run%d.root",\
+    TFile* output_cov_file = new TFile(Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                                             configs.GetProposalCovDir().c_str(),\
                                             configs.GetProposalCovFileBase().c_str(),\
+                                            configs.GetNSteps(),\
                                             configs.GetNPars(),\
                                             handler.GetBranchNumber(),\
                                             handler.GetRunNumber()),\

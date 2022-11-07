@@ -1,4 +1,4 @@
-/* 
+/*
  * File to handle command line arguments and pass configurations to other calling functions.
  * Work in progress until this analysis becomes more fleshed out.
  */
@@ -6,7 +6,7 @@
 #include "CommandHandler.h"
 
 CommandHandler::CommandHandler(int argc, char* argv[]) {
-    
+
     fname_in = "test.root";
     fname_out = "test.root";
     fname_config = "";

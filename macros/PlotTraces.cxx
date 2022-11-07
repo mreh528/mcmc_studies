@@ -30,9 +30,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Load MCMC file
-    TString fname = Form("%s%s_npars%d_branch%d_run%d.root",\
+    TString fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                          configs->GetChainDir().c_str(),\
                          configs->GetMCMCFileBase().c_str(),\
+                         configs->GetNSteps(),\
                          configs->GetNPars(),\
                          handler.GetBranchNumber(),\
                          handler.GetRunNumber());
@@ -96,9 +97,9 @@ int main(int argc, char* argv[]) {
             graphs[ibr]->SetLineColor(4);
             graphs[ibr]->SetTitle(Form("%s_trace",branch_names[ibr].Data()));
             graphs[ibr]->Draw();
-            if (branch_names[ibr].CompareTo("lnl_current")==0) {
-                c1.SetLogy();
-            }
+            //if (branch_names[ibr].CompareTo("lnl_current")==0) {
+            //    c1.SetLogy();
+            //}
             c1.Print(Form("%s%s_trace_npars%d_branch%d_run%d.jpg",\
                           configs->GetPlotDir().c_str(),\
                           branch_names[ibr].Data(),\
