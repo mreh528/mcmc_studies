@@ -8,7 +8,7 @@
 // Default constructor
 covariance::covariance() {
     ndims = -1;
-    nsteps = -1;
+    nsteps_current = -1;
     branch_names = NULL;
     branch_values = NULL;
     mcmc_file = NULL;
@@ -115,6 +115,7 @@ void covariance::LoadChain(TString mcmc_fname) {
         }
     }
 
+    nsteps_current = mcmc_chain->GetEntries();
     chain_loaded = true;
 
     return;
@@ -135,7 +136,7 @@ void covariance::LoadCovPrev(TString cov_fname) {
 }
 
 
-// Calculates the covariance matrix of some input set of data
+// Calculates the covariance matrix of some input mcmc chain
 void covariance::CalcCovariance() {
     // Make sure we're not running uninitialized
     if (ndims < 1) {
@@ -154,13 +155,15 @@ void covariance::CalcCovariance() {
     cov_mat->Zero();
 
     // Loop through all entries in the chain to calculate the covariance matrix
-    nsteps = mcmc_chain->GetEntries();
-    for (int ientry = 0; ientry < nsteps; ++ientry) {
+    std::cout << "Building new covariance matrix with " << nsteps_current
+              << " mcmc steps." << std::endl;
+    for (int ientry = 0; ientry < nsteps_current; ++ientry) {
         mcmc_chain->GetEntry(ientry);
         for (int ibr = 0; ibr < ndims; ++ibr) {
-            for (int jbr = ibr; jbr < ndims; ++jbr) { // Symmetric Matrix
+            for (int jbr = 0; jbr < ndims; ++jbr) {
                 (*cov_mat)(ibr,jbr) += (branch_values[ibr] - (*mean_vec)(ibr)) \
-                                     * (branch_values[jbr] - (*mean_vec)(jbr)) / (double)nsteps;
+                                     * (branch_values[jbr] - (*mean_vec)(jbr)) \
+                                     / (double)nsteps_current;
             }
         }
     }
@@ -171,33 +174,41 @@ void covariance::CalcCovariance() {
 
 // Updates the value of an input covariance matrix using some loaded set of data.
 // Must have previously loaded the data using LoadChain()
-TMatrixDSym* covariance::UpdateCovariance(int nsteps_prev) {
+TMatrixDSym* covariance::UpdateCovariance(int current_run_number) {
     if (!chain_loaded) {
         std::cout << "ERROR: Chain of new data not loaded. "
                   << "Cannot update input covmat until LoadChain() is called." << std::endl;
         exit(EXIT_FAILURE);
     }
 
+    // Assuming we use a constant number of steps per run, the number of
+    // steps so far = run# * nsteps
+    int nsteps_prev = nsteps_current * current_run_number;
+    std::cout << "Updating previous covariance matrix (built with " << nsteps_prev
+              << " steps) with " << nsteps_current << " new steps." << std::endl;
+
     CalcCovariance(); // calc covariance for new data loaded in chain; stored in cov_mat
     TMatrixDSym* new_cov = (TMatrixDSym*)cov_mat->Clone();
+    TMatrixDSym* tmp_cov = (TMatrixDSym*)cov_mat_prev->Clone();
 
     // Updated covariance matrix is a weighted average of the previous two
-    *new_cov *= (double)(nsteps-1) / (double)(nsteps+nsteps_prev-1);
-    *cov_mat_prev *= (double)(nsteps_prev-1) / (double)(nsteps+nsteps_prev-1);
+    (*new_cov) *= ((double)(nsteps_current-1) / (double)(nsteps_current+nsteps_prev-1));
+    (*tmp_cov) *= ((double)(nsteps_prev-1) / (double)(nsteps_current+nsteps_prev-1));
     // Fill temp matrix holding outer product of the two mean vector differences
     TMatrixDSym* mean_mat = new TMatrixDSym(ndims);
     for (int i = 0; i < ndims; ++i) {
-        for (int j = i; j < ndims; ++j) {
+        for (int j = 0; j < ndims; ++j) {
             (*mean_mat)(i,j) = ((*mean_vec)(i)-(*mean_vec_prev)(i)) \
                              * ((*mean_vec)(j)-(*mean_vec_prev)(j)) \
-                             * (((double)nsteps*(double)nsteps_prev) \
-                                / ((double)(nsteps+nsteps_prev-1)*(double)(nsteps+nsteps_prev)));
+                             * (((double)nsteps_current*(double)nsteps_prev) \
+                                / ((double)(nsteps_current+nsteps_prev-1) \
+                                  * (double)(nsteps_current+nsteps_prev)));
         }
     }
 
     // Add together the three matrices to finish the weighted average
-    *new_cov += (*cov_mat_prev);
-    *new_cov += (*mean_mat);
+    (*new_cov) += (*tmp_cov);
+    (*new_cov) += (*mean_mat);
 
     return new_cov;
 }
@@ -219,11 +230,10 @@ void covariance::CalcMeans() {
     mean_vec->Zero();
 
     // Loop through all entries in the chain to calculate the mean of each par
-    nsteps = mcmc_chain->GetEntries();
-    for (int ientry = 0; ientry < nsteps; ++ientry) {
+    for (int ientry = 0; ientry < nsteps_current; ++ientry) {
         mcmc_chain->GetEntry(ientry);
         for (int ibr = 0; ibr < ndims; ++ibr) {
-            (*mean_vec)(ibr) += branch_values[ibr]/(double)nsteps;
+            (*mean_vec)(ibr) += branch_values[ibr]/(double)nsteps_current;
         }
     }
 
@@ -233,20 +243,25 @@ void covariance::CalcMeans() {
 
 // Updates the values of an input mean vector using some loaded set of data.
 // Must have loaded the data previously using LoadChain()
-TVectorD* covariance::UpdateMeans(int nsteps_prev) {
+TVectorD* covariance::UpdateMeans(int current_run_number) {
     if (!chain_loaded) {
         std::cout << "ERROR: Chain of new data not loaded. "
                   << "Cannot update input means until LoadChain() is called." << std::endl;
         exit(EXIT_FAILURE);
     }
 
+    // Assuming we use a constant number of steps per run, the number of
+    // steps so far = run# * nsteps
+    int nsteps_prev = nsteps_current * current_run_number;
+
     CalcMeans(); // Calculate means for new data loaded in chain
     TVectorD* new_means = (TVectorD*)mean_vec->Clone();
+    TVectorD* tmp_vec = (TVectorD*)mean_vec_prev->Clone();
 
     // New mean vector is the weighted average of the old + new
-    *new_means *= (double)nsteps / (double)(nsteps + nsteps_prev);
-    *mean_vec_prev *= (double)nsteps_prev / (double)(nsteps + nsteps_prev);
-    *new_means += *mean_vec_prev;
+    *new_means *= (double)nsteps_current / (double)(nsteps_current + nsteps_prev);
+    *tmp_vec *= (double)nsteps_prev / (double)(nsteps_current + nsteps_prev);
+    *new_means += *tmp_vec;
 
     return new_means;
 }
@@ -265,7 +280,8 @@ TMatrixDSym* covariance::GetRandomCovMat(int npars) {
 
     // Have to multiply by transpose to guarantee positive definite
     TMatrixDSym* tmp = (TMatrixDSym*)rand_cov->Clone();
-    rand_cov->TMult(tmp->T());
+    tmp->T();
+    rand_cov->TMult(*tmp);
     return rand_cov;
 }
 
@@ -280,5 +296,20 @@ TVectorD* covariance::GetRandomMeanVec(int npars) {
     }
 
     return rand_means;
+}
+
+
+// Prints the values of the input matrix to the screen
+void covariance::PrintMatrix(TMatrixDSym* mat) {
+
+    for (int i = 0; i < mat->GetNrows(); ++i) {
+        std::cout << "  ";
+        for (int j = 0; j < mat->GetNcols(); ++j) {
+            std::cout << (*mat)(i,j) << "  ";
+        }
+        std::cout << std::endl;
+    }
+
+    return;
 }
 

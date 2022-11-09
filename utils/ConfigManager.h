@@ -1,6 +1,8 @@
 #ifndef _CONFIGMANAGER_H_
 #define _CONFIGMANAGER_H_
 
+#include "TString.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>

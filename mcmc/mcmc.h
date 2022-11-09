@@ -32,7 +32,6 @@ private:
 
     // MCMC loading functions
     void LoadPrevChain();
-    void InitNewChain();
     void InitCovMats();
     void PrepareOutput();
     void SaveChain();

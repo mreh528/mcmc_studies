@@ -8,6 +8,7 @@
 #include "TTree.h"
 #include "TObjArray.h"
 #include "TVectorD.h"
+#include "TMatrixD.h"
 #include "TMatrixDSym.h"
 
 #include <iostream>
@@ -23,9 +24,9 @@ public:
     void LoadChain(TString mcmc_fname);
     void LoadCovPrev(TString cov_fname);
     void CalcCovariance();
-    TMatrixDSym* UpdateCovariance(int nsteps_prev);
+    TMatrixDSym* UpdateCovariance(int current_run_number);
     void CalcMeans();
-    TVectorD* UpdateMeans(int nsteps_prev);
+    TVectorD* UpdateMeans(int current_run_number);
 
     TMatrixDSym* GetRandomCovMat(int npars);
     TVectorD* GetRandomMeanVec(int npars);
@@ -36,6 +37,8 @@ public:
     TMatrixDSym* GetPrevCovMat() { return cov_mat_prev; }
     int GetNDims() { return ndims; }
 
+    void PrintMatrix(TMatrixDSym* mat);
+
 private:
     TString* branch_names;
     double* branch_values;
@@ -43,7 +46,7 @@ private:
     TFile* cov_file;
     TTree* mcmc_chain;
     bool chain_loaded;
-    int nsteps;
+    int nsteps_current;
 
     int ndims;
     TVectorD* mean_vec;

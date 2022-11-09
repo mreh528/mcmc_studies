@@ -221,5 +221,31 @@ double RRSuboptimalityFactor(TMatrixD* mat1, TMatrixD* mat2) {
     return (double)N * numerator / denominator;
 }
 
+
+// Calculates the WM distance between two multivariate normal distributions.
+// Distributions must be the same dimentionality.
+// This version ignores the mean vector difference
+double WassersteinNoMeans(TMatrixD* cov1, TMatrixD* cov2) {
+    if (cov1->GetNrows() != cov1->GetNcols() ||
+        cov1->GetNrows() != cov2->GetNrows() ||
+        cov1->GetNrows() != cov2->GetNcols()) {
+        std::cout << "ERROR: Input matrices and vectors for calculating Wasserstein must have the same dimensionality." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Calculating Wasserstein Metric between " << cov1->GetName() << " and "
+              << cov2->GetName() << "..." << std::endl;
+
+    // Prepare matrices and diff vector -- sorry for the mess :/
+    TMatrixD* tmp1 = new TMatrixD(SqrtMat(cov2));
+    TMatrixD* tmp2 = new TMatrixD((*tmp1) * ((*cov1) * (*tmp1)));
+    TMatrixD* tmp3 = new TMatrixD(2.*SqrtMat(tmp2));
+    TMatrixD* tmp4 = new TMatrixD((*cov1) + (*cov2) - (*tmp3));
+
+    // Calculate Wasserstein metric
+    return TMath::Sqrt(TMath::Abs(TraceMat(tmp4)));
+}
+
+
 #endif
 

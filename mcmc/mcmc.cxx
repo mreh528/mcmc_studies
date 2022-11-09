@@ -22,9 +22,8 @@ mcmc::mcmc(ConfigManager* configs, int _nrun, int _nbranch) {
     // Prepare covariance matrices needed for step proposal and lnl evaluation
     InitCovMats();
 
-    // If we're starting fresh, initialize the chain from scratch
-    if (new_chain) { InitNewChain(); }
-    else { LoadPrevChain(); }
+    // If we're starting from a previous run, initialize the chain from the old one
+    if (!new_chain) { LoadPrevChain(); }
 
 }
 
@@ -114,7 +113,7 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
     branch = _nbranch;
     nrun_current = _nrun;
     nrun_previous = nrun_current - 1;
-    new_chain = _nrun == 0;
+    new_chain = (_nrun == 0);
 
     // Set necessary starting parameters
     if (configs->GetNPars() > 0) {
@@ -147,10 +146,10 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
         if (configs->GetProposalCovDir().length() > 0 &&
             configs->GetProposalCovFileBase().length() > 0) {
             proposal_cov_dir = configs->GetProposalCovDir();
-            proposal_cov_fname.Form("%s%s_npars%d_branch%d_run%d.root",\
+            proposal_cov_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                                     proposal_cov_dir.Data(),\
                                     configs->GetProposalCovFileBase().c_str(),\
-                                    npars, branch, nrun_previous);
+                                    nsteps, npars, branch, nrun_previous);
         } else {
             std::cout << "ERROR: Proposal cov not specified for continuing chain" << std::endl;
             exit(EXIT_FAILURE);
@@ -228,19 +227,16 @@ void mcmc::LoadPrevChain() {
     mcmc_chain_prev->GetEntry(mcmc_chain_prev->GetEntries()-1);
 
     // Set up the new MCMC chain
-    mcmc_chain = new TTree("posteriors", "Posterior_Distributions");
     for (int ibr = 0; ibr < nbranches; ++ibr) {
         // Load miscellaneous pars first
-        std::cout << "Loading branch " << branch_names[ibr] << std::endl;
+        std::cout << "  Loading branch " << branch_names[ibr] << std::endl;
         if (branch_names[ibr].CompareTo("lnl_current")==0) {
             lnl_current = lnl_in;
-            mcmc_chain->Branch("lnl_current", &lnl_current, "lnl_current/F");
             continue;
         }
         if (branch_names[ibr].CompareTo("nstep_current")==0) {
             nstep_current = nstep_previous + 1;
             nstep_start = nstep_current;
-            mcmc_chain->Branch("nstep_current", &nstep_current, "nstep_current/I");
             continue;
         }
 
@@ -248,53 +244,12 @@ void mcmc::LoadPrevChain() {
         for (int ipar = 0; ipar < npars; ++ipar) {
             if (branch_names[ibr].CompareTo(Form("mcmc_par_%d",ipar))==0) {
                 (*current_pars)(ipar) = branch_vals[ibr];
-                mcmc_chain->Branch(branch_names[ibr].Data(), &(*current_pars)(ipar), Form("mcmc_par_%d/D",ipar));
                 break;
             }
         }
     }
 
-    std::cout << "\nStarting parameter values:" << std::endl;
-    TObjArray* brs = (TObjArray*)mcmc_chain->GetListOfBranches();
-    for (int ipar = 0; ipar < npars; ++ipar) {
-        TBranch* br = (TBranch*)brs->At(ipar);
-        std::cout << br->GetName() << " = " << (*current_pars)(ipar) << std::endl;
-    }
-
-    return;
-}
-
-
-// Initializes a new MCMC chain
-void mcmc::InitNewChain() {
-    std::cout << "Initializing new MCMC branches.." << std::endl;
-
-    if (npars < 0) {
-        std::cout << "ERROR: Forgot to set a number of parameters." << std::endl;
-        std::cout << "       Check your config file." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    mcmc_chain = new TTree("posteriors", "Posterior_Distributions");
-    // Start with mcmc chain parameters
-    for (int ipar = 0; ipar < npars; ++ipar) {
-        mcmc_chain->Branch(Form("mcmc_par_%d",ipar), &(*current_pars)(ipar), Form("mcmc_par_%d/D",ipar));
-    }
-    // Setup other misc branches
-    mcmc_chain->Branch("lnl_current", &lnl_current, "lnl_current/F");
-    mcmc_chain->Branch("nstep_current", &nstep_current, "nstep_current/I");
-
-    // Find a random starting position
-    ProposeStep();
-    CalcPDF();
-    lnl_current = lnl_proposed;
-
-    std::cout << "\nStarting parameter values:" << std::endl;
-    TObjArray* brs = (TObjArray*)mcmc_chain->GetListOfBranches();
-    for (int ipar = 0; ipar < npars; ++ipar) {
-        TBranch* br = (TBranch*)brs->At(ipar);
-        std::cout << br->GetName() << " = " << (*current_pars)(ipar) << std::endl;
-    }
+    input_chain_file->Close();
 
     return;
 }
@@ -316,12 +271,16 @@ void mcmc::InitCovMats() {
     // Check for input covariance matrix
     if (proposal_cov_fname.Length() > 0 && !new_chain) {
         proposal_cov_file = new TFile(proposal_cov_fname.Data(), "READ");
+        if (!proposal_cov_file->IsOpen()) {
+            std::cout << "ERROR: Invalid covmat file " << proposal_cov_fname << std::endl;
+            exit(EXIT_FAILURE);
+        }
         proposal_covmat = (TMatrixDSym*)proposal_cov_file->Get("cov_mat");
         std::cout << "Got Proposal covariance matrix from "
                   << proposal_cov_file->GetName() << std::endl;
     } else {
         proposal_covmat = (TMatrixDSym*)identity_matrix->Clone();
-        proposal_covmat->Zero();
+        (*proposal_covmat) *= 1./epsilon;
     }
 
     // Load target distribution covmat
@@ -337,6 +296,9 @@ void mcmc::InitCovMats() {
         target_means = (TVectorD*)target_cov_file->Get("mean_vec");
         std::cout << "Got Target distribution from "
                   << target_cov_file->GetName() << std::endl;
+
+        // Test using optimal proposal
+        //proposal_covmat = (TMatrixDSym*)target_covmat->Clone();
     }
 
     // Make sure we actually have a target covmat to fit to
@@ -371,11 +333,43 @@ void mcmc::GetCholDecomp() {
 // Prepare the output file
 void mcmc::PrepareOutput() {
 
+    // Open output file
     output_chain_file = new TFile(output_chain_fname.Data(), "RECREATE");
     if (!output_chain_file->IsOpen()) {
         std::cout << "ERROR: Invalid output file name " << output_chain_fname << std::endl;
         exit(EXIT_FAILURE);
     }
+
+    // Set up output tree
+    if (npars < 0) {
+        std::cout << "ERROR: Forgot to set a number of parameters." << std::endl;
+        std::cout << "       Check your config file." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::cout << "Initializing new MCMC branches.." << std::endl;
+    mcmc_chain = new TTree("posteriors", "Posterior_Distributions");
+
+    // Start with mcmc chain parameters
+    for (int ipar = 0; ipar < npars; ++ipar) {
+        mcmc_chain->Branch(Form("mcmc_par_%d",ipar), &(*current_pars)(ipar), Form("mcmc_par_%d/D",ipar));
+    }
+    // Then other misc branches
+    mcmc_chain->Branch("lnl_current", &lnl_current, "lnl_current/F");
+    mcmc_chain->Branch("nstep_current", &nstep_current, "nstep_current/I");
+
+    // Find a random starting position if starting fresh
+    if (new_chain) {
+        ProposeStep();
+        CalcPDF();
+        AcceptStep();
+        naccepted = 0;
+    }
+
+    std::cout << "Starting parameter values:" << std::endl;
+    for (int ipar = 0; ipar < npars; ++ipar) {
+        std::cout << "  mcmc_par_" << ipar << " = " << (*current_pars)(ipar) << std::endl;
+    }
+    std::cout << "  lnl_current = " << lnl_current << std::endl;
 
     return;
 }
@@ -384,12 +378,14 @@ void mcmc::PrepareOutput() {
 // Main function for running the MCMC
 void mcmc::RunMCMC() {
 
-    // Set up file I/O
+    // Setup output file
     PrepareOutput();
 
     // Time the mcmc
     clock.Start();
 
+    std::cout << "Starting MCMC with " << nsteps << " steps, gss="
+              << global_step_size << std::endl;
     while (nstep_current < nstep_start+nsteps) {
         // Progress update
         if (nstep_current % (nsteps/10) == 0) {
@@ -450,7 +446,7 @@ void mcmc::CalcPDF() {
     // This can be computed more simply using the following:
     PDF = (*diff_vec) * ((*target_covmat_inverted) * (*diff_vec));
 
-    lnl_proposed = PDF;
+    lnl_proposed = 0.5*PDF;
 }
 
 
@@ -478,7 +474,8 @@ void mcmc::AcceptStep() {
 // Reject the proposed step
 void mcmc::RejectStep() {
     // Keep parameters where they are and just fill the output
-    mcmc_chain->Fill();
+    //mcmc_chain->Fill();
+    if (!new_chain) { mcmc_chain->Fill(); } // Greedy start
     return;
 }
 

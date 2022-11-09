@@ -64,7 +64,6 @@ int main(int argc, char* argv[]) {
     }
 
     // Set up graphs
-    int npars = configs->GetNPars();
     int nsteps = mcmc_chain->GetEntries();
     TGraph* graphs[nbranches];
     for (int ibr = 0; ibr < nbranches; ++ibr) {

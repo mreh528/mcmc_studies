@@ -37,21 +37,21 @@ int main(int argc, char* argv[]) {
                                     configs.GetNPars(),\
                                     handler.GetBranchNumber(),\
                                     handler.GetRunNumber());
-    TString input_cov_fname = "";
+    TString prev_cov_fname = "";
     if (handler.GetRunNumber() > 0) {
-        input_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                               configs.GetProposalCovDir().c_str(),\
-                               configs.GetProposalCovFileBase().c_str(),\
-                               configs.GetNSteps(),\
-                               configs.GetNPars(),\
-                               handler.GetBranchNumber(),\
-                               handler.GetRunNumber()-1);
+        prev_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
+                              configs.GetProposalCovDir().c_str(),\
+                              configs.GetProposalCovFileBase().c_str(),\
+                              configs.GetNSteps(),\
+                              configs.GetNPars(),\
+                              handler.GetBranchNumber(),\
+                              handler.GetRunNumber()-1);
     }
 
     // Create the covariance object and load the inputs into it
     covariance* covmat = new covariance(configs.GetNPars());
     covmat->LoadChain(input_mcmc_fname);
-    if (handler.GetRunNumber() > 0) { covmat->LoadCovPrev(input_cov_fname); }
+    if (handler.GetRunNumber() > 0) { covmat->LoadCovPrev(prev_cov_fname); }
 
     // Prepare our writing objects
     std::cout << "Calculating posterior covariance matrix..." << std::endl;
@@ -66,8 +66,8 @@ int main(int argc, char* argv[]) {
     }
     // If not a new chain, update covariance from previous run
     else {
-        post_means = covmat->UpdateMeans(configs.GetNSteps());
-        post_cov = covmat->UpdateCovariance(configs.GetNSteps());
+        post_means = covmat->UpdateMeans(handler.GetRunNumber());
+        post_cov = covmat->UpdateCovariance(handler.GetRunNumber());
     }
 
     // Write covariance matrix to file
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     post_means->Write("mean_vec");
     output_cov_file->Close();
 
-    std::cout << "Done!" << std::endl;
+    std::cout << "Done!\n" << std::endl;
 
     return 0;
 }
