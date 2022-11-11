@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
                                     handler.GetBranchNumber(),\
                                     handler.GetRunNumber());
     TString prev_cov_fname = "";
-    if (handler.GetRunNumber() > 0) {
+    if (handler.GetRunNumber() > 0 && configs.AdaptiveMetropolis()) {
         prev_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                               configs.GetProposalCovDir().Data(),\
                               configs.GetProposalCovFileBase().Data(),\
@@ -46,28 +46,39 @@ int main(int argc, char* argv[]) {
                               configs.GetNPars(),\
                               handler.GetBranchNumber(),\
                               handler.GetRunNumber()-1);
+    } else if (!configs.AdaptiveMetropolis()) {
+        prev_cov_fname = Form("%s%s_npars%d_branch%d.root",\
+                              configs.GetProposalCovDir().Data(),\
+                              configs.GetProposalCovFileBase().Data(),\
+                              configs.GetNPars(),\
+                              handler.GetBranchNumber());
     }
 
     // Create the covariance object and load the inputs into it
-    covariance* covmat = new covariance(configs.GetNPars());
+    covariance* covmat = new covariance(configs.GetNPars(), configs.AdaptiveMetropolis());
     covmat->LoadChain(input_mcmc_fname);
-    if (handler.GetRunNumber() > 0) { covmat->LoadCovPrev(prev_cov_fname); }
+    if (handler.GetRunNumber() > 0 || !configs.AdaptiveMetropolis()) {
+        covmat->LoadCovPrev(prev_cov_fname);
+    }
 
     // Prepare our writing objects
     std::cout << "Calculating posterior covariance matrix..." << std::endl;
     TMatrixDSym* post_cov = NULL;
     TVectorD* post_means = NULL;
+    TVectorD post_steps(2); // only way to store nsteps for next time is via a tvector
+    post_steps(0) = covmat->GetNSteps();
+    post_steps(1) = 0.;
 
-    // If it's a new chain, calc covariance from scratch
+    // If it's a new adaptive chain, calc covariance from scratch
     if (handler.GetRunNumber() == 0) {
         covmat->CalcCovariance(); // Means calc'd implicitly
         post_means = covmat->GetMeanVec();
         post_cov = covmat->GetCovMat();
     }
-    // If not a new chain, update covariance from previous run
+    // If not a new chain or not adaptive, update covariance from previous run
     else {
-        post_means = covmat->UpdateMeans(handler.GetRunNumber());
-        post_cov = covmat->UpdateCovariance(handler.GetRunNumber());
+        post_means = covmat->UpdateMeans();
+        post_cov = covmat->UpdateCovariance();
     }
 
     // Write covariance matrix to file
@@ -83,6 +94,7 @@ int main(int argc, char* argv[]) {
               << output_cov_file->GetName() << "..." << std::endl;
     post_cov->Write("cov_mat");
     post_means->Write("mean_vec");
+    post_steps.Write("step_vec");
     output_cov_file->Close();
 
     std::cout << "Done!\n" << std::endl;

@@ -9,7 +9,6 @@
 #include "TBranch.h"
 
 #include "mcmc.h"
-#include "Covariance.h"
 #include "CommandHandler.h"
 #include "ConfigManager.h"
 

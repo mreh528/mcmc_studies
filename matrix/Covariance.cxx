@@ -7,25 +7,13 @@
 
 // Default constructor
 covariance::covariance() {
-    ndims = -1;
-    nsteps_current = -1;
-    branch_names = NULL;
-    branch_values = NULL;
-    mcmc_file = NULL;
-    cov_file = NULL;
-    mcmc_chain = NULL;
-    mean_vec = NULL;
-    cov_mat = NULL;
-    mean_vec_prev = NULL;
-    cov_mat_prev = NULL;
-    chain_loaded = false;
-
+    SetDefault();
     std::cout << "Warning: Covariance default constructor used. Most variables will be uninitialized." << std::endl;
 }
 
 
 // Constructor with only the parameter count specified
-covariance::covariance(int npars) {
+covariance::covariance(int npars, bool adapt) {
     // Make sure we don't get bad input
     if (npars < 1) {
         std::cout << "ERROR: invalid number of parameters specified: " << npars << std::endl;
@@ -33,7 +21,9 @@ covariance::covariance(int npars) {
     }
 
     // Initialize
+    SetDefault();
     SetDim(npars);
+    adaptive = adapt;
 
     // Ensure all values are initialized at 0 instead of memory junk
     mean_vec->Zero();
@@ -52,6 +42,28 @@ covariance::~covariance() {
     if (cov_mat_prev) { delete cov_mat_prev; }
     if (cov_file) { cov_file->Close(); }
     if (mcmc_file) { mcmc_file->Close(); }
+}
+
+
+// Set default values of data
+void covariance::SetDefault() {
+    ndims = -1;
+    nsteps_current = 0;
+    nsteps_previous = 0;
+    branch_names = NULL;
+    branch_values = NULL;
+    mcmc_file = NULL;
+    cov_file = NULL;
+    mcmc_chain = NULL;
+    mean_vec = NULL;
+    cov_mat = NULL;
+    mean_vec_prev = NULL;
+    cov_mat_prev = NULL;
+    step_vec = new TVectorD(2);
+    step_vec->Zero();
+    chain_loaded = false;
+    adaptive = false;
+    return;
 }
 
 
@@ -116,6 +128,7 @@ void covariance::LoadChain(TString mcmc_fname) {
     }
 
     nsteps_current = mcmc_chain->GetEntries();
+    (*step_vec)(1) = (Double_t)nsteps_current;
     chain_loaded = true;
 
     return;
@@ -133,6 +146,8 @@ void covariance::LoadCovPrev(TString cov_fname) {
 
     mean_vec_prev = (TVectorD*)cov_file->Get("mean_vec");
     cov_mat_prev = (TMatrixDSym*)cov_file->Get("cov_mat");
+    TVectorD* step_vec_prev = (TVectorD*)cov_file->Get("step_vec");
+    (*step_vec)(0) = (*step_vec_prev)(0);
 }
 
 
@@ -151,6 +166,13 @@ void covariance::CalcCovariance() {
     // First need means in order to calculate covariance
     CalcMeans();
 
+    // Use loaded covmat if not adaptive
+    if (!adaptive) {
+        if (cov_mat_prev) { cov_mat = cov_mat_prev; return; }
+        std::cout << "ERROR: No proposal covmat loaded when running non-adaptive chains!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     // Make sure everything is reset
     cov_mat->Zero();
 
@@ -163,7 +185,7 @@ void covariance::CalcCovariance() {
             for (int jbr = 0; jbr < ndims; ++jbr) {
                 (*cov_mat)(ibr,jbr) += (branch_values[ibr] - (*mean_vec)(ibr)) \
                                      * (branch_values[jbr] - (*mean_vec)(jbr)) \
-                                     / (double)nsteps_current;
+                                     / (*step_vec)(1);
             }
         }
     }
@@ -174,17 +196,18 @@ void covariance::CalcCovariance() {
 
 // Updates the value of an input covariance matrix using some loaded set of data.
 // Must have previously loaded the data using LoadChain()
-TMatrixDSym* covariance::UpdateCovariance(int current_run_number) {
+TMatrixDSym* covariance::UpdateCovariance() {
     if (!chain_loaded) {
         std::cout << "ERROR: Chain of new data not loaded. "
                   << "Cannot update input covmat until LoadChain() is called." << std::endl;
         exit(EXIT_FAILURE);
+    } else if (!adaptive) {
+        return cov_mat_prev;
     }
 
-    // Assuming we use a constant number of steps per run, the number of
-    // steps so far = run# * nsteps
-    int nsteps_prev = nsteps_current * current_run_number;
-    std::cout << "Updating previous covariance matrix (built with " << nsteps_prev
+    // Step count has to be stored in a float-point vector unfortunately
+    nsteps_previous = (int)((*step_vec)(0));
+    std::cout << "Updating previous covariance matrix (built with " << nsteps_previous
               << " steps) with " << nsteps_current << " new steps." << std::endl;
 
     CalcCovariance(); // calc covariance for new data loaded in chain; stored in cov_mat
@@ -192,17 +215,16 @@ TMatrixDSym* covariance::UpdateCovariance(int current_run_number) {
     TMatrixDSym* tmp_cov = (TMatrixDSym*)cov_mat_prev->Clone();
 
     // Updated covariance matrix is a weighted average of the previous two
-    (*new_cov) *= ((double)(nsteps_current-1) / (double)(nsteps_current+nsteps_prev-1));
-    (*tmp_cov) *= ((double)(nsteps_prev-1) / (double)(nsteps_current+nsteps_prev-1));
+    (*new_cov) *= (((*step_vec)(1)-1.) / (step_vec->Sum()-1.));
+    (*tmp_cov) *= (((*step_vec)(0)-1.) / (step_vec->Sum()-1.));
     // Fill temp matrix holding outer product of the two mean vector differences
     TMatrixDSym* mean_mat = new TMatrixDSym(ndims);
     for (int i = 0; i < ndims; ++i) {
         for (int j = 0; j < ndims; ++j) {
             (*mean_mat)(i,j) = ((*mean_vec)(i)-(*mean_vec_prev)(i)) \
                              * ((*mean_vec)(j)-(*mean_vec_prev)(j)) \
-                             * (((double)nsteps_current*(double)nsteps_prev) \
-                                / ((double)(nsteps_current+nsteps_prev-1) \
-                                  * (double)(nsteps_current+nsteps_prev)));
+                             * (((*step_vec)(1)*(*step_vec)(0)) \
+                                / ((step_vec->Sum()-1.) * step_vec->Sum()));
         }
     }
 
@@ -224,6 +246,10 @@ void covariance::CalcMeans() {
     } else if (!chain_loaded) {
         std::cout << "ERROR: No chain loaded to read from!" << std::endl;
         exit(EXIT_FAILURE);
+    } else if (!adaptive) { // use loaded means if not adaptive
+        if (mean_vec_prev) { mean_vec = mean_vec_prev; return; }
+        std::cout << "ERROR: No proposal means loaded when running non-adaptive chains!" << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // Make sure everything is reset
@@ -233,7 +259,7 @@ void covariance::CalcMeans() {
     for (int ientry = 0; ientry < nsteps_current; ++ientry) {
         mcmc_chain->GetEntry(ientry);
         for (int ibr = 0; ibr < ndims; ++ibr) {
-            (*mean_vec)(ibr) += branch_values[ibr]/(double)nsteps_current;
+            (*mean_vec)(ibr) += branch_values[ibr]/(*step_vec)(1);
         }
     }
 
@@ -243,24 +269,25 @@ void covariance::CalcMeans() {
 
 // Updates the values of an input mean vector using some loaded set of data.
 // Must have loaded the data previously using LoadChain()
-TVectorD* covariance::UpdateMeans(int current_run_number) {
+TVectorD* covariance::UpdateMeans() {
     if (!chain_loaded) {
         std::cout << "ERROR: Chain of new data not loaded. "
                   << "Cannot update input means until LoadChain() is called." << std::endl;
         exit(EXIT_FAILURE);
+    } else if (!adaptive) {
+        return mean_vec_prev;
     }
 
-    // Assuming we use a constant number of steps per run, the number of
-    // steps so far = run# * nsteps
-    int nsteps_prev = nsteps_current * current_run_number;
+    // Step count has to be stored in a float-point vector unfortunately
+    nsteps_previous = (int)((*step_vec)(0));
 
     CalcMeans(); // Calculate means for new data loaded in chain
     TVectorD* new_means = (TVectorD*)mean_vec->Clone();
     TVectorD* tmp_vec = (TVectorD*)mean_vec_prev->Clone();
 
     // New mean vector is the weighted average of the old + new
-    *new_means *= (double)nsteps_current / (double)(nsteps_current + nsteps_prev);
-    *tmp_vec *= (double)nsteps_prev / (double)(nsteps_current + nsteps_prev);
+    *new_means *= (*step_vec)(1) / step_vec->Sum();
+    *tmp_vec *= (*step_vec)(0) / step_vec->Sum();
     *new_means += *tmp_vec;
 
     return new_means;

@@ -47,6 +47,8 @@ public:
     int GetNSteps() { return nsteps; }
     int GetNPars() { return npars; }
     double GetEpsilon() { return epsilon; }
+    bool GreedyAcceptance() { return greedy; }
+    bool AdaptiveMetropolis() { return adaptive; }
 private:
     void SetDefault();
 
@@ -62,6 +64,8 @@ private:
     int nsteps;
     int npars;
     double epsilon;
+    bool greedy;
+    bool adaptive;
 };
 
 #endif

@@ -38,6 +38,7 @@ void ConfigManager::SetDefault() {
     nsteps = -1;
     npars = -1;
     epsilon = -1.;
+    greedy = false;
 }
 
 
@@ -109,6 +110,16 @@ int ConfigManager::readConfig(const char* fname) {
                 std::getline(line_stream, key, ' '); // burn the '='
                 std::getline(line_stream, key);
                 epsilon = std::stod(key);
+            }
+            else if (key == "GREEDY") {
+                std::getline(line_stream, key, ' '); // burn the '='
+                std::getline(line_stream, key);
+                greedy = (key == "true");
+            }
+            else if (key == "ADAPTIVE") {
+                std::getline(line_stream, key, ' '); // burn the '='
+                std::getline(line_stream, key);
+                adaptive = (key == "true");
             }
         }
     }

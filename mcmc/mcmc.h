@@ -88,6 +88,8 @@ private:
     Int_t branch; // branch index (for parallel chains)
     Int_t naccepted; // # of accepted steps in the MCMC
     bool new_chain; // Are we starting a fresh chain?
+    bool greedy; // Greedy only fills output on accepted step
+    bool adaptive; // Running AM or non-adaptive?
 
     // Others
     TRandom3* rng;

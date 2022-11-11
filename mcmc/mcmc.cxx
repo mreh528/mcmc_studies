@@ -88,6 +88,7 @@ void mcmc::SetDefault() {
     branch = -1;
     naccepted = 0;
     new_chain = true;
+    greedy = false;
 
     // Setup RNG
     rng = new TRandom3();
@@ -133,6 +134,8 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
     if (configs->GetNSteps() > -1) {
         nsteps = configs->GetNSteps();
     }
+    greedy = configs->GreedyAcceptance();
+    adaptive = configs->AdaptiveMetropolis();
     // If any of the above is uninitialized, tell user to check config file
     if (epsilon < 0. || npars < 1 || nsteps < 0) {
         std::cout << "ERROR: One or more critical MCMC variables uninitialized." << std::endl;
@@ -146,10 +149,17 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
         if (configs->GetProposalCovDir().Length() > 0 &&
             configs->GetProposalCovFileBase().Length() > 0) {
             proposal_cov_dir = configs->GetProposalCovDir();
-            proposal_cov_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",
-                                    proposal_cov_dir.Data(),
-                                    configs->GetProposalCovFileBase().Data(),
-                                    nsteps, npars, branch, nrun_previous);
+            if (adaptive) {
+                proposal_cov_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",
+                                        proposal_cov_dir.Data(),
+                                        configs->GetProposalCovFileBase().Data(),
+                                        nsteps, npars, branch, nrun_previous);
+            } else {
+                proposal_cov_fname.Form("%s%s_npars%d_branch%d.root",
+                                        proposal_cov_dir.Data(),
+                                        configs->GetProposalCovFileBase().Data(),
+                                        npars, branch);
+            }
         } else {
             std::cout << "ERROR: Proposal cov not specified for continuing chain" << std::endl;
             exit(EXIT_FAILURE);
@@ -296,9 +306,6 @@ void mcmc::InitCovMats() {
         target_means = (TVectorD*)target_cov_file->Get("mean_vec");
         std::cout << "Got Target distribution from "
                   << target_cov_file->GetName() << std::endl;
-
-        // Test using optimal proposal
-        //proposal_covmat = (TMatrixDSym*)target_covmat->Clone();
     }
 
     // Make sure we actually have a target covmat to fit to
@@ -431,23 +438,13 @@ void mcmc::ProposeStep() {
 
 // Calculate the PDF using the multivariate normal distribution
 void mcmc::CalcPDF() {
-    Float_t PDF = 0.;
 
     // Calc difference vector
     TVectorD* diff_vec = (TVectorD*)proposed_pars->Clone();
     (*diff_vec) -= (*target_means);
 
-    // Compute matrix sum to get total PDF
-    //for (int i = 0; i < npars; ++i) {
-    //    for (int j = 0; j < npars; ++j ) {
-    //        PDF += (*diff_vec)(i) * (*target_covmat_inverted)(i,j) * (*diff_vec)(j);
-    //    }
-    //}
-
-    // This can be computed more simply using the following:
-    PDF = (*diff_vec) * ((*target_covmat_inverted) * (*diff_vec));
-
-    lnl_proposed = 0.5*PDF;
+    // Compute the (log) PDF via the matrix product:
+    lnl_proposed = 0.5*((*diff_vec) * ((*target_covmat_inverted) * (*diff_vec)));
 }
 
 
@@ -475,8 +472,7 @@ void mcmc::AcceptStep() {
 // Reject the proposed step
 void mcmc::RejectStep() {
     // Keep parameters where they are and just fill the output
-    //mcmc_chain->Fill();
-    if (!new_chain) { mcmc_chain->Fill(); } // Greedy start
+    if (!greedy) { mcmc_chain->Fill(); } // Greedy start; only fills accepted steps
     return;
 }
 
