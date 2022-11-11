@@ -73,12 +73,12 @@ void MCMCTune::ReadConfigs(ConfigManager* configs) {
     }
 
     // Prepare target distribution file name for loading later
-    if (configs->GetTargetCovDir().length() > 0 &&
-        configs->GetTargetCovFileBase().length() > 0) {
+    if (configs->GetTargetCovDir().Length() > 0 &&
+        configs->GetTargetCovFileBase().Length() > 0) {
         target_cov_dir = configs->GetTargetCovDir();
         target_cov_fname.Form("%s%s_npars%d_branch%d_target.root",
                               target_cov_dir.Data(),
-                              configs->GetTargetCovFileBase().c_str(),
+                              configs->GetTargetCovFileBase().Data(),
                               npars, branch);
     } else {
         std::cout << "ERROR: No target distribution specified." << std::endl;

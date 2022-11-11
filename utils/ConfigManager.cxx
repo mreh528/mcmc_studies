@@ -5,20 +5,15 @@
 #include "ConfigManager.h"
 
 // Default constructor
-ConfigManager::ConfigManager() {}
+ConfigManager::ConfigManager() {
+    SetDefault();
+}
+
 
 // Constructor using config file name
 ConfigManager::ConfigManager(const char* fname) {
     // Set default values for variables in case they are not set in config
-    main_output_directory = "";
-    mcmc_file_base = "";
-    covmat_file_base = "";
-    chain_directory = "";
-    proposal_cov_directory = "";
-    target_cov_directory = "";
-    nsteps = -1;
-    npars = -1;
-    epsilon = -1.;
+    SetDefault();
 
     // Now read set values from config
     std::cout << "\nReading configuration from " << fname << std::endl;
@@ -31,8 +26,24 @@ ConfigManager::ConfigManager(const char* fname) {
     std::cout << "Successfully read configuration file!" << std::endl;
 }
 
+
+// Sets default values to empty or out of bounds
+void ConfigManager::SetDefault() {
+    main_output_directory = "";
+    mcmc_file_base = "";
+    covmat_file_base = "";
+    chain_directory = "";
+    proposal_cov_directory = "";
+    target_cov_directory = "";
+    nsteps = -1;
+    npars = -1;
+    epsilon = -1.;
+}
+
+
 // Destructor
 ConfigManager::~ConfigManager() {}
+
 
 // Main function that reads config file and holds data for later use
 int ConfigManager::readConfig(const char* fname) {

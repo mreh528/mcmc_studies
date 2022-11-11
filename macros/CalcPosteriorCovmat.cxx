@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
 
     // Load our inputs based on the config file
     TString input_mcmc_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                                    configs.GetChainDir().c_str(),\
-                                    configs.GetMCMCFileBase().c_str(),\
+                                    configs.GetChainDir().Data(),\
+                                    configs.GetMCMCFileBase().Data(),\
                                     configs.GetNSteps(),\
                                     configs.GetNPars(),\
                                     handler.GetBranchNumber(),\
@@ -40,8 +40,8 @@ int main(int argc, char* argv[]) {
     TString prev_cov_fname = "";
     if (handler.GetRunNumber() > 0) {
         prev_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                              configs.GetProposalCovDir().c_str(),\
-                              configs.GetProposalCovFileBase().c_str(),\
+                              configs.GetProposalCovDir().Data(),\
+                              configs.GetProposalCovFileBase().Data(),\
                               configs.GetNSteps(),\
                               configs.GetNPars(),\
                               handler.GetBranchNumber(),\
@@ -72,8 +72,8 @@ int main(int argc, char* argv[]) {
 
     // Write covariance matrix to file
     TFile* output_cov_file = new TFile(Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                                            configs.GetProposalCovDir().c_str(),\
-                                            configs.GetProposalCovFileBase().c_str(),\
+                                            configs.GetProposalCovDir().Data(),\
+                                            configs.GetProposalCovFileBase().Data(),\
                                             configs.GetNSteps(),\
                                             configs.GetNPars(),\
                                             handler.GetBranchNumber(),\

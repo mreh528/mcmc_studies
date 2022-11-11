@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
     // Write covariance matrix to file
     std::cout << "Covariance matrix and mean vector generated. Saving output..." << std::endl;
     TFile* output = new TFile(Form("%s%s_npars%d_branch%d_target.root",\
-                                   configs.GetTargetCovDir().c_str(),\
-                                   configs.GetTargetCovFileBase().c_str(),\
+                                   configs.GetTargetCovDir().Data(),\
+                                   configs.GetTargetCovFileBase().Data(),\
                                    configs.GetNPars(),\
                                    handler.GetBranchNumber()),\
                                    "RECREATE");

@@ -38,15 +38,15 @@ int main(int argc, char* argv[]) {
 
     // Form the posterior and target covariance file names based on the config file
     TString post_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                                  configs.GetProposalCovDir().c_str(),\
-                                  configs.GetProposalCovFileBase().c_str(),\
+                                  configs.GetProposalCovDir().Data(),\
+                                  configs.GetProposalCovFileBase().Data(),\
                                   configs.GetNSteps(),\
                                   configs.GetNPars(),\
                                   handler.GetBranchNumber(),\
                                   handler.GetRunNumber());
     TString target_cov_fname = Form("%s%s_npars%d_branch%d_target.root",\
-                                    configs.GetTargetCovDir().c_str(),\
-                                    configs.GetTargetCovFileBase().c_str(),\
+                                    configs.GetTargetCovDir().Data(),\
+                                    configs.GetTargetCovFileBase().Data(),\
                                     configs.GetNPars(),\
                                     handler.GetBranchNumber());
 

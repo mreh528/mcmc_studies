@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
 
     // Load MCMC file
     TString fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                         configs->GetChainDir().c_str(),\
-                         configs->GetMCMCFileBase().c_str(),\
+                         configs->GetChainDir().Data(),\
+                         configs->GetMCMCFileBase().Data(),\
                          configs->GetNSteps(),\
                          configs->GetNPars(),\
                          handler.GetBranchNumber(),\
@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
             //    c1.SetLogy();
             //}
             c1.Print(Form("%s%s_trace_npars%d_branch%d_run%d.jpg",\
-                          configs->GetPlotDir().c_str(),\
+                          configs->GetPlotDir().Data(),\
                           branch_names[ibr].Data(),\
                           configs->GetNPars(),\
                           handler.GetBranchNumber(),\

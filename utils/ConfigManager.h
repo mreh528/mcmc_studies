@@ -18,28 +18,46 @@ public:
 
     int readConfig(const char* fname);
 
-    std::string GetOutDir() { return main_output_directory; }
-    std::string GetChainDir() { return main_output_directory + chain_directory; }
-    std::string GetProposalCovDir() { return main_output_directory + proposal_cov_directory; }
-    std::string GetTargetCovDir() { return main_output_directory + target_cov_directory; }
-    std::string GetPlotDir() { return main_output_directory + plot_directory; }
+    TString GetOutDir() { return main_output_directory; }
+    TString GetChainDir() {
+        TString return_string = main_output_directory;
+        return_string += chain_directory;
+        return return_string;
+    }
+    TString GetProposalCovDir() {
+        TString return_string = main_output_directory;
+        return_string += proposal_cov_directory;
+        return return_string;
+    }
+    TString GetTargetCovDir() {
+        TString return_string = main_output_directory;
+        return_string += target_cov_directory;
+        return return_string;
+    }
+    TString GetPlotDir() {
+        TString return_string = main_output_directory;
+        return_string += plot_directory;
+        return return_string;
+    }
 
-    std::string GetMCMCFileBase() { return mcmc_file_base; }
-    std::string GetTargetCovFileBase() { return covmat_file_base; }
-    std::string GetProposalCovFileBase() { return covmat_file_base; }
+    TString GetMCMCFileBase() { return mcmc_file_base; }
+    TString GetTargetCovFileBase() { return covmat_file_base; }
+    TString GetProposalCovFileBase() { return covmat_file_base; }
 
     int GetNSteps() { return nsteps; }
     int GetNPars() { return npars; }
     double GetEpsilon() { return epsilon; }
 private:
-    std::string main_output_directory;
-    std::string chain_directory;
-    std::string proposal_cov_directory;
-    std::string target_cov_directory;
-    std::string plot_directory;
+    void SetDefault();
 
-    std::string mcmc_file_base;
-    std::string covmat_file_base;
+    TString main_output_directory;
+    TString chain_directory;
+    TString proposal_cov_directory;
+    TString target_cov_directory;
+    TString plot_directory;
+
+    TString mcmc_file_base;
+    TString covmat_file_base;
 
     int nsteps;
     int npars;
