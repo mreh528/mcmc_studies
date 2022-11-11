@@ -146,9 +146,9 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
         if (configs->GetProposalCovDir().length() > 0 &&
             configs->GetProposalCovFileBase().length() > 0) {
             proposal_cov_dir = configs->GetProposalCovDir();
-            proposal_cov_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                                    proposal_cov_dir.Data(),\
-                                    configs->GetProposalCovFileBase().c_str(),\
+            proposal_cov_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",
+                                    proposal_cov_dir.Data(),
+                                    configs->GetProposalCovFileBase().c_str(),
                                     nsteps, npars, branch, nrun_previous);
         } else {
             std::cout << "ERROR: Proposal cov not specified for continuing chain" << std::endl;
@@ -159,14 +159,14 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
     if (configs->GetMCMCFileBase().length() > 0 &&
         configs->GetChainDir().length() > 0) {
         chain_dir = configs->GetChainDir();
-        output_chain_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                                chain_dir.Data(),\
-                                configs->GetMCMCFileBase().c_str(),\
+        output_chain_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",
+                                chain_dir.Data(),
+                                configs->GetMCMCFileBase().c_str(),
                                 nsteps, npars, branch, nrun_current);
         if (!new_chain) {
-            input_chain_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
-                                   chain_dir.Data(),\
-                                   configs->GetMCMCFileBase().c_str(),\
+            input_chain_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",
+                                   chain_dir.Data(),
+                                   configs->GetMCMCFileBase().c_str(),
                                    nsteps, npars, branch, nrun_previous);
         }
     } else {
@@ -178,7 +178,7 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
         configs->GetTargetCovFileBase().length() > 0) {
         target_cov_dir = configs->GetTargetCovDir();
         target_cov_fname.Form("%s%s_npars%d_branch%d_target.root",
-                              target_cov_dir.Data(),\
+                              target_cov_dir.Data(),
                               configs->GetTargetCovFileBase().c_str(),
                               npars, branch);
     } else {
@@ -302,7 +302,7 @@ void mcmc::InitCovMats() {
     }
 
     // Make sure we actually have a target covmat to fit to
-    if (target_covmat == NULL) {
+    if (target_covmat == NULL || target_means == NULL) {
         std::cout << "ERROR: Target distribution not set!" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -391,7 +391,8 @@ void mcmc::RunMCMC() {
         if (nstep_current % (nsteps/10) == 0) {
             std::cout << "  MCMC on step " << nstep_current
                       << " / " << nstep_start+nsteps << std::endl;
-            std::cout << "    Accepted " << naccepted << " steps so far." << std::endl;
+            std::cout << "    Accepted " << naccepted << " steps so far, "
+                      << "lnl_current = " << lnl_current << std::endl;
         }
 
         ProposeStep();

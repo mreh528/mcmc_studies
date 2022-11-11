@@ -43,7 +43,7 @@ private:
     void AcceptStep();
     void RejectStep();
 
-    // File I/O
+    // General File I/O
     TString chain_dir;
     TString input_chain_fname;
     TString output_chain_fname;
