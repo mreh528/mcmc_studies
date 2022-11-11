@@ -106,6 +106,11 @@ int ConfigManager::readConfig(const char* fname) {
                 std::getline(line_stream, key);
                 npars = std::stoi(key);
             }
+            else if (key == "BRANCH") {
+                std::getline(line_stream, key, ' '); // burn the '='
+                std::getline(line_stream, key);
+                branch = std::stoi(key);
+            }
             else if (key == "EPSILON") {
                 std::getline(line_stream, key, ' '); // burn the '='
                 std::getline(line_stream, key);

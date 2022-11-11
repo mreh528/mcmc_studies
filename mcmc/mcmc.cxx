@@ -12,12 +12,12 @@ mcmc::mcmc() {
 
 
 // Constructor using input configuration file
-mcmc::mcmc(ConfigManager* configs, int _nrun, int _nbranch) {
+mcmc::mcmc(ConfigManager* configs, int _nrun) {
     // Start by setting everything out-of-bounds so we can tell if something is missing
     SetDefault();
 
     // Read config file and set necessary variables
-    ReadConfigs(configs, _nrun, _nbranch);
+    ReadConfigs(configs, _nrun);
 
     // Prepare covariance matrices needed for step proposal and lnl evaluation
     InitCovMats();
@@ -99,19 +99,18 @@ void mcmc::SetDefault() {
 
 
 // Constructor helper to read config file and set needed variables
-void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
+void mcmc::ReadConfigs(ConfigManager* configs, int _nrun) {
     std::cout << "Reading configs..." << std::endl;
 
     // Check for bad input
-    if (_nrun < 0 || _nbranch < 0) {
-        std::cout << "ERROR: Branch number or run number not specified.\n"
-                  << "       These should be specified at the command line\n"
+    if (_nrun < 0) {
+        std::cout << "ERROR: Run number not specified.\n"
+                  << "       This should be specified at the command line\n"
                   << "       using \'-r\' and \'-b\'" << std::endl;
         exit(EXIT_FAILURE);
     }
 
     // Set base configs
-    branch = _nbranch;
     nrun_current = _nrun;
     nrun_previous = nrun_current - 1;
     new_chain = (_nrun == 0);
@@ -134,10 +133,14 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch) {
     if (configs->GetNSteps() > -1) {
         nsteps = configs->GetNSteps();
     }
+    // Parallel branch number
+    if (configs->GetBranchNumber() > -1) {
+        branch = configs->GetBranchNumber();
+    }
     greedy = configs->GreedyAcceptance();
     adaptive = configs->AdaptiveMetropolis();
     // If any of the above is uninitialized, tell user to check config file
-    if (epsilon < 0. || npars < 1 || nsteps < 0) {
+    if (epsilon < 0. || npars < 1 || nsteps < 0 || branch < 0) {
         std::cout << "ERROR: One or more critical MCMC variables uninitialized." << std::endl;
         std::cout << "       Please check your config file." << std::endl;
         exit(EXIT_FAILURE);

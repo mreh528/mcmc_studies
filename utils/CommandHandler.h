@@ -17,11 +17,9 @@ public:
     bool verbose;
 
     int GetRunNumber() { return nrun; }
-    int GetBranchNumber() { return nbranch; }
 private:
     // MCMC-specific variables
     int nrun;
-    int nbranch;
 };
 
 #endif

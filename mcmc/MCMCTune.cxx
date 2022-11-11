@@ -68,7 +68,14 @@ void MCMCTune::ReadConfigs(ConfigManager* configs) {
             (*step_sizes)(ipar) = STARTING_STEP_SIZE;
         }
     } else {
-        std::cout << "ERROR: number of parameters not specified." << std::endl;
+        std::cout << "ERROR: Number of parameters not specified." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    // Set branch for parallel runs
+    if (configs->GetBranchNumber() > -1) {
+        branch = configs->GetBranchNumber();
+    } else {
+        std::cout << "ERROR: No branch number specified." << std::endl;
         exit(EXIT_FAILURE);
     }
 

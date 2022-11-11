@@ -12,7 +12,6 @@ CommandHandler::CommandHandler(int argc, char* argv[]) {
     fname_config = "";
     verbose = false;
     nrun = -1;
-    nbranch = -1;
 
     for (int iarg = 0; iarg < argc; ++iarg) {
         // Print usage message
@@ -24,6 +23,7 @@ CommandHandler::CommandHandler(int argc, char* argv[]) {
             std::cout << "    -o || --output [fname]    Output file name\n";
             std::cout << "    -c || --config [fname]    Configuration input file name\n";
             std::cout << "    -v || --verbose           If set, prints more help messages while running\n";
+            std::cout << "    -r || --run               Current MCMC run number\n";
             std::cout << "****************************************" << std::endl;
             exit(0);
         }
@@ -46,10 +46,6 @@ CommandHandler::CommandHandler(int argc, char* argv[]) {
         // MCMC run number
         else if (std::string(argv[iarg]) == "-r" || std::string(argv[iarg]) == "--run") {
             nrun = atoi(argv[++iarg]);
-        }
-        // MCMC branch number
-        else if (std::string(argv[iarg]) == "-b" || std::string(argv[iarg]) == "--branch") {
-            nbranch = atoi(argv[++iarg]);
         }
         // Default
         else {

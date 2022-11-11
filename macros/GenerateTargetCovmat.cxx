@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     ConfigManager configs(handler.fname_config.Data());
     covariance* covmat = new covariance();
 
-    if (handler.GetBranchNumber() < 0) {
+    if (configs.GetBranchNumber() < 0) {
         std::cout << "ERROR: Branch number not set at cmd line" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
                                    configs.GetTargetCovDir().Data(),\
                                    configs.GetTargetCovFileBase().Data(),\
                                    configs.GetNPars(),\
-                                   handler.GetBranchNumber()),\
+                                   configs.GetBranchNumber()),\
                                    "RECREATE");
     random_cov->Write("cov_mat");
     random_means->Write("mean_vec");

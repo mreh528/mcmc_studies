@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
     ConfigManager configs(handler.fname_config.Data());
 
     // Want to be able to see how the suboptimality factor changes with each iteration
-    if (handler.GetRunNumber() < 0 || handler.GetBranchNumber() < 0) {
-        std::cout << "ERROR: Run number or branch number not set at cmd line" << std::endl;
+    if (handler.GetRunNumber() < 0) {
+        std::cout << "ERROR: Run number not set at cmd line!" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -42,13 +42,13 @@ int main(int argc, char* argv[]) {
                                   configs.GetProposalCovFileBase().Data(),\
                                   configs.GetNSteps(),\
                                   configs.GetNPars(),\
-                                  handler.GetBranchNumber(),\
+                                  configs.GetBranchNumber(),\
                                   handler.GetRunNumber());
     TString target_cov_fname = Form("%s%s_npars%d_branch%d_target.root",\
                                     configs.GetTargetCovDir().Data(),\
                                     configs.GetTargetCovFileBase().Data(),\
                                     configs.GetNPars(),\
-                                    handler.GetBranchNumber());
+                                    configs.GetBranchNumber());
 
     // Open the files
     std::cout << "Reading posterior covariance from " << post_cov_fname

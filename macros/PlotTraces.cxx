@@ -24,8 +24,8 @@ int main(int argc, char* argv[]) {
     CommandHandler handler(argc, argv);
     ConfigManager* configs = new ConfigManager(handler.fname_config.Data());
 
-    if (handler.GetBranchNumber() < 0 || handler.GetRunNumber() < 0) {
-        std::cout << "ERROR: Branch number or run number not set at cmd line" << std::endl;
+    if (handler.GetRunNumber() < 0) {
+        std::cout << "ERROR: Run number not set at cmd line" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
                          configs->GetMCMCFileBase().Data(),\
                          configs->GetNSteps(),\
                          configs->GetNPars(),\
-                         handler.GetBranchNumber(),\
+                         configs->GetBranchNumber(),\
                          handler.GetRunNumber());
     std::cout << "Reading MCMC chain from " << fname.Data() << std::endl;
     TFile* fin = new TFile(fname.Data(), "READ");
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
                           configs->GetPlotDir().Data(),\
                           branch_names[ibr].Data(),\
                           configs->GetNPars(),\
-                          handler.GetBranchNumber(),\
+                          configs->GetBranchNumber(),\
                           handler.GetRunNumber()));
         }
     }

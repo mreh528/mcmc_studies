@@ -24,8 +24,8 @@ int main(int argc, char* argv[]) {
     CommandHandler handler(argc, argv);
     ConfigManager configs(handler.fname_config.Data());
 
-    if (handler.GetRunNumber() < 0 || handler.GetBranchNumber() < 0) {
-        std::cout << "ERROR: Run number or branch number not set at cmd line" << std::endl;
+    if (handler.GetRunNumber() < 0) {
+        std::cout << "ERROR: Run number not set at cmd line" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
                                     configs.GetMCMCFileBase().Data(),\
                                     configs.GetNSteps(),\
                                     configs.GetNPars(),\
-                                    handler.GetBranchNumber(),\
+                                    configs.GetBranchNumber(),\
                                     handler.GetRunNumber());
     TString prev_cov_fname = "";
     if (handler.GetRunNumber() > 0 && configs.AdaptiveMetropolis()) {
@@ -44,14 +44,14 @@ int main(int argc, char* argv[]) {
                               configs.GetProposalCovFileBase().Data(),\
                               configs.GetNSteps(),\
                               configs.GetNPars(),\
-                              handler.GetBranchNumber(),\
+                              configs.GetBranchNumber(),\
                               handler.GetRunNumber()-1);
     } else if (!configs.AdaptiveMetropolis()) {
         prev_cov_fname = Form("%s%s_npars%d_branch%d.root",\
                               configs.GetProposalCovDir().Data(),\
                               configs.GetProposalCovFileBase().Data(),\
                               configs.GetNPars(),\
-                              handler.GetBranchNumber());
+                              configs.GetBranchNumber());
     }
 
     // Create the covariance object and load the inputs into it
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
                                             configs.GetProposalCovFileBase().Data(),\
                                             configs.GetNSteps(),\
                                             configs.GetNPars(),\
-                                            handler.GetBranchNumber(),\
+                                            configs.GetBranchNumber(),\
                                             handler.GetRunNumber()),\
                                             "RECREATE");
     std::cout << "Covariance matrix and mean vector generated. Saving output to "

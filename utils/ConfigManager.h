@@ -46,6 +46,7 @@ public:
 
     int GetNSteps() { return nsteps; }
     int GetNPars() { return npars; }
+    int GetBranchNumber() { return branch; }
     double GetEpsilon() { return epsilon; }
     bool GreedyAcceptance() { return greedy; }
     bool AdaptiveMetropolis() { return adaptive; }
@@ -63,6 +64,7 @@ private:
 
     int nsteps;
     int npars;
+    int branch;
     double epsilon;
     bool greedy;
     bool adaptive;

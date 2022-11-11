@@ -20,7 +20,7 @@
 class mcmc {
 public:
     mcmc();
-    mcmc(ConfigManager* configs, int _nrun=-1, int _nbranch=-1);
+    mcmc(ConfigManager* configs, int _nrun=-1);
     ~mcmc();
 
     void RunMCMC();
@@ -28,7 +28,7 @@ public:
 private:
     // Constructor helper functions
     void SetDefault();
-    void ReadConfigs(ConfigManager* configs, int _nrun, int _nbranch);
+    void ReadConfigs(ConfigManager* configs, int _nrun);
 
     // MCMC loading functions
     void LoadPrevChain();
