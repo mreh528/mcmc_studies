@@ -29,6 +29,8 @@ int main(int argc, char* argv[]) {
     // Load tuned values into objects for writing
     TVectorD* starting_pars = tuner->GetStartingPars();
     TVectorD* starting_steps = tuner->GetStartingSteps();
+    Float_t lnl_best = tuner->GetStartingLnl();
+    Int_t nstep = 0;
     TMatrixDSym* starting_cov = new TMatrixDSym(starting_steps->GetNoElements());
     starting_cov->Zero();
     // Starting steps become diagonal covariance matrix
@@ -45,8 +47,20 @@ int main(int argc, char* argv[]) {
     std::cout << "Writing outputs to " << fout->GetName() << std::endl;
     starting_pars->Write("mean_vec");
     starting_cov->Write("cov_mat");
-    fout->Close();
 
+    // Also save starting step values into a posteriors tree for MCMC loading
+    TTree* mcmc_chain = new TTree("posteriors", "Posterior_Distributions");
+    for (int ipar = 0; ipar < starting_steps->GetNoElements(); ++ipar) {
+        mcmc_chain->Branch(Form("mcmc_par_%d",ipar),
+                           &(*starting_pars)(ipar),
+                           Form("mcmc_par_%d/D",ipar));
+    }
+    mcmc_chain->Branch("lnl_current", &lnl_best, "lnl_current/F");
+    mcmc_chain->Branch("nstep_current", &nstep, "nstep_current/I");
+    mcmc_chain->Fill();
+    mcmc_chain->Write();
+
+    fout->Close();
     std::cout << "Finished!\n" << std::endl;
     return 0;
 }

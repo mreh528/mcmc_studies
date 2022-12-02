@@ -258,7 +258,9 @@ double NonEuclideanDistance(TVectorD* means_sampled, TVectorD* means_target, TMa
         exit(EXIT_FAILURE);
     }
 
-    TVectorD* diff_vec = new TVectorD(means_sampled - means_target);
+    std::cout << "Calculating the non-Euclidean distance between the mean vectors..." << std::endl;
+
+    TVectorD* diff_vec = new TVectorD((*means_sampled) - (*means_target));
     TMatrixD* cov_inv = (TMatrixD*)cov->Clone();
     cov_inv->Invert();
     double dist2 = (*diff_vec) * ((*cov_inv) * (*diff_vec));

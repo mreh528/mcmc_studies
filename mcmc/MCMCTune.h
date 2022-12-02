@@ -30,6 +30,7 @@ public:
 
     TVectorD* GetStartingPars() { return parameters; }
     TVectorD* GetStartingSteps() { return step_sizes; }
+    Float_t GetStartingLnl() { return lnl_current; }
 private:
     void SetDefault();
     void ReadConfigs(ConfigManager* configs);
