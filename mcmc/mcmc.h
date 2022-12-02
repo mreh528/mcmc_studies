@@ -89,7 +89,8 @@ private:
     Int_t naccepted; // # of accepted steps in the MCMC
     bool new_chain; // Are we starting a fresh chain?
     bool greedy; // Greedy only fills output on accepted step
-    bool adaptive; // Running AM or non-adaptive?
+    bool custom_prop; // Use a custom proposal covariance?
+    bool custom_start; // Use a custom start position?
 
     // Others
     TRandom3* rng;

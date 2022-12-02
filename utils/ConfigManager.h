@@ -43,13 +43,16 @@ public:
     TString GetMCMCFileBase() { return mcmc_file_base; }
     TString GetTargetCovFileBase() { return covmat_file_base; }
     TString GetProposalCovFileBase() { return covmat_file_base; }
+    TString GetCustomProposalFName() { return custom_prop_fname; }
+    TString GetCustomStartFName() { return custom_start_fname; }
 
     int GetNSteps() { return nsteps; }
     int GetNPars() { return npars; }
     int GetBranchNumber() { return branch; }
     double GetEpsilon() { return epsilon; }
     bool GreedyAcceptance() { return greedy; }
-    bool AdaptiveMetropolis() { return adaptive; }
+    bool CustomProposal() { return custom_prop; }
+    bool CustomStart() { return custom_start; }
 private:
     void SetDefault();
 
@@ -61,13 +64,16 @@ private:
 
     TString mcmc_file_base;
     TString covmat_file_base;
+    TString custom_prop_fname;
+    TString custom_start_fname;
 
     int nsteps;
     int npars;
     int branch;
     double epsilon;
     bool greedy;
-    bool adaptive;
+    bool custom_prop;
+    bool custom_start;
 };
 
 #endif

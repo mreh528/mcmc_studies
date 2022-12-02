@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
                                     configs.GetBranchNumber(),\
                                     handler.GetRunNumber());
     TString prev_cov_fname = "";
-    if (handler.GetRunNumber() > 0 && configs.AdaptiveMetropolis()) {
+    if (handler.GetRunNumber() > 0) {
         prev_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                               configs.GetProposalCovDir().Data(),\
                               configs.GetProposalCovFileBase().Data(),\
@@ -46,18 +46,12 @@ int main(int argc, char* argv[]) {
                               configs.GetNPars(),\
                               configs.GetBranchNumber(),\
                               handler.GetRunNumber()-1);
-    } else if (!configs.AdaptiveMetropolis()) {
-        prev_cov_fname = Form("%s%s_npars%d_branch%d.root",\
-                              configs.GetProposalCovDir().Data(),\
-                              configs.GetProposalCovFileBase().Data(),\
-                              configs.GetNPars(),\
-                              configs.GetBranchNumber());
     }
 
     // Create the covariance object and load the inputs into it
-    covariance* covmat = new covariance(configs.GetNPars(), configs.AdaptiveMetropolis());
+    covariance* covmat = new covariance(configs.GetNPars());
     covmat->LoadChain(input_mcmc_fname);
-    if (handler.GetRunNumber() > 0 || !configs.AdaptiveMetropolis()) {
+    if (handler.GetRunNumber() > 0) {
         covmat->LoadCovPrev(prev_cov_fname);
     }
 
@@ -69,13 +63,13 @@ int main(int argc, char* argv[]) {
     post_steps(0) = covmat->GetNSteps();
     post_steps(1) = 0.;
 
-    // If it's a new adaptive chain, calc covariance from scratch
+    // If it's a new chain, calc covariance from scratch
     if (handler.GetRunNumber() == 0) {
         covmat->CalcCovariance(); // Means calc'd implicitly
         post_means = covmat->GetMeanVec();
         post_cov = covmat->GetCovMat();
     }
-    // If not a new chain or not adaptive, update covariance from previous run
+    // If not a new chain, update covariance from previous run
     else {
         post_means = covmat->UpdateMeans();
         post_cov = covmat->UpdateCovariance();

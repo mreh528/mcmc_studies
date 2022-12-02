@@ -35,10 +35,15 @@ void ConfigManager::SetDefault() {
     chain_directory = "";
     proposal_cov_directory = "";
     target_cov_directory = "";
+    plot_directory = "";
+    custom_prop_fname = "";
+    custom_start_fname = "";
     nsteps = -1;
     npars = -1;
     epsilon = -1.;
     greedy = false;
+    custom_prop = false;
+    custom_start = false;
 }
 
 
@@ -96,6 +101,16 @@ int ConfigManager::readConfig(const char* fname) {
                 std::getline(line_stream, key);
                 target_cov_directory = key;
             }
+            else if (key == "CUSTOM_PROP_FILE") {
+                std::getline(line_stream, key, ' '); // burn the '='
+                std::getline(line_stream, key);
+                custom_prop_fname = key;
+            }
+            else if (key == "CUSTOM_START_FILE") {
+                std::getline(line_stream, key, ' '); // burn the '='
+                std::getline(line_stream, key);
+                custom_start_fname = key;
+            }
             else if (key == "NSTEPS") {
                 std::getline(line_stream, key, ' '); // burn the '='
                 std::getline(line_stream, key);
@@ -121,10 +136,15 @@ int ConfigManager::readConfig(const char* fname) {
                 std::getline(line_stream, key);
                 greedy = (key == "true");
             }
-            else if (key == "ADAPTIVE") {
+            else if (key == "USE_CUSTOM_PROP") {
                 std::getline(line_stream, key, ' '); // burn the '='
                 std::getline(line_stream, key);
-                adaptive = (key == "true");
+                custom_prop = (key == "true");
+            }
+            else if (key == "USE_CUSTOM_START") {
+                std::getline(line_stream, key, ' '); // burn the '='
+                std::getline(line_stream, key);
+                custom_start = (key == "true");
             }
         }
     }

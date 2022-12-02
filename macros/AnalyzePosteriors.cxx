@@ -72,6 +72,7 @@ int main(int argc, char* argv[]) {
     double LERM = LogEuclideanRiemannMetric(post_cov, target_cov);
     double WM   = WassersteinMetric(post_cov, post_means, target_cov, target_means);
     double WM2  = WassersteinNoMeans(post_cov, target_cov);
+    double NED  = NonEuclideanDistance(post_means, target_means, target_cov);
 
     // Calculate and print out the various convergence metrics
     std::cout << std::endl;
@@ -80,6 +81,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Log Euclidean Riemann Metric:           " << LERM << std::endl;
     std::cout << "Wasserstein Metric:                     " << WM   << std::endl;
     std::cout << "Wasserstein Metric without Means:       " << WM2  << std::endl;
+    std::cout << "Non-Euclidean Distance Element:         " << NED  << std::endl;
 
     std::cout << "\nDone!" << std::endl;
     return 0;

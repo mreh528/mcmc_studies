@@ -17,7 +17,7 @@
 class covariance {
 public:
     covariance();
-    covariance(int npars, bool adapt=true);
+    covariance(int npars);
     ~covariance();
 
     void SetDim(int npars);
@@ -50,7 +50,6 @@ private:
     TFile* cov_file;
     TTree* mcmc_chain;
     bool chain_loaded;
-    bool adaptive;
     int nsteps_current;
     int nsteps_previous;
 

@@ -247,5 +247,25 @@ double WassersteinNoMeans(TMatrixD* cov1, TMatrixD* cov2) {
 }
 
 
+// Calculates the non-Euclidean squared distance element between the target means
+// using the target covariance as the metric. Basically a measure of the number of
+// sigmas away the empirical is from the target.
+double NonEuclideanDistance(TVectorD* means_sampled, TVectorD* means_target, TMatrixD* cov) {
+    if (means_sampled->GetNrows() != means_target->GetNrows() ||
+        means_target->GetNrows() != cov->GetNrows() ||
+        cov->GetNrows() != cov->GetNcols()) {
+        std::cout << "ERROR: Input matrices and vectors for calculating non-Euclidean distance must have the same dimensionality." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    TVectorD* diff_vec = new TVectorD(means_sampled - means_target);
+    TMatrixD* cov_inv = (TMatrixD*)cov->Clone();
+    cov_inv->Invert();
+    double dist2 = (*diff_vec) * ((*cov_inv) * (*diff_vec));
+
+    return TMath::Sqrt(dist2);
+}
+
+
 #endif
 

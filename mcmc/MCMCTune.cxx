@@ -111,7 +111,7 @@ void MCMCTune::InitCovMats() {
         target_covmat = (TMatrixD*)target_cov_file->Get("cov_mat");
         target_means = (TVectorD*)target_cov_file->Get("mean_vec");
         if (target_covmat == NULL || target_means == NULL) {
-            std::cout "ERROR: Target distribution not set from file." << std::endl;
+            std::cout << "ERROR: Target distribution not set from file." << std::endl;
             exit(EXIT_FAILURE);
         }
         // Get inverted target matrix for PDF calculation
@@ -141,6 +141,9 @@ void MCMCTune::MinimizeParam(int ipar) {
     Double_t lnl_left = CalcPDF(parameters, ipar, par_left);
     Double_t lnl_right = CalcPDF(parameters, ipar, par_right);
 
+    std::cout << "Wiggling par " << ipar << std::endl;
+    std::cout << "  Starting value: " << par_mid << ", Starting lnl: " << lnl_mid << std::endl;
+
     // Widen search until we bracket the minimum
     while ((lnl_left < lnl_mid) || (lnl_right < lnl_mid)) {
         step_size *= 2.;
@@ -151,8 +154,8 @@ void MCMCTune::MinimizeParam(int ipar) {
     }
 
     // Initialize pars needed for golden ratio search
-    Double_t par_midleft = par_left + (par_right - par_left)/GOLDEN_RATIO;
-    Double_t par_midright = par_right - (par_right - par_left)/GOLDEN_RATIO;
+    Double_t par_midright = par_left + (par_right - par_left)/GOLDEN_RATIO;
+    Double_t par_midleft = par_right - (par_right - par_left)/GOLDEN_RATIO;
     Double_t lnl_midleft = CalcPDF(parameters, ipar, par_midleft);
     Double_t lnl_midright = CalcPDF(parameters, ipar, par_midright);
 
@@ -161,7 +164,7 @@ void MCMCTune::MinimizeParam(int ipar) {
             || TMath::Abs(lnl_left-lnl_midleft) > TUNING_LNL_THRESHOLD
             || TMath::Abs(lnl_midleft-lnl_midright) > TUNING_LNL_THRESHOLD
             || TMath::Abs(lnl_midright-lnl_right) > TUNING_LNL_THRESHOLD)
-           && TMath::Abs(par_midright-par_midleft) > TUNING_PAR_THESHOLD) {
+           && TMath::Abs(par_midright-par_midleft) > TUNING_PAR_THRESHOLD) {
 
         // If ML > MR, min lies between ML and R
         if (lnl_midleft > lnl_midright) {
@@ -183,7 +186,10 @@ void MCMCTune::MinimizeParam(int ipar) {
         }
     }
 
-    (*parameters)(ipar) = (par_midleft + par_midright)/2.;
+    par_mid = (par_midleft + par_midright)/2.;
+    (*parameters)(ipar) = par_mid;
+    lnl_mid = CalcPDF(parameters, ipar, par_mid);
+    std::cout << "  Ending value:   " << par_mid << ", Ending lnl:   " << lnl_mid << std::endl;
     return;
 }
 
@@ -202,6 +208,8 @@ void MCMCTune::TuneStep(int ipar) {
     Double_t lnl_right = CalcPDF(parameters, ipar, par_right);
     Double_t lnl_target = lnl_mid + TUNING_STEP_THRESHOLD;
 
+    std::cout << "Finding step width for par " << ipar << std::endl;
+
     // Widen distribution until we bracket the lnl threshold
     while (lnl_left < lnl_target || lnl_right < lnl_target) {
         step_size *= 2.;
@@ -216,7 +224,8 @@ void MCMCTune::TuneStep(int ipar) {
     par_right = BisectRoot(ipar, par_mid, par_right, lnl_target);
 
     // Set step size to the width of the distribution
-    (*step_sizes)(ipar) = par_right - par_left;
+    (*step_sizes)(ipar) = (par_right - par_left)*(par_right - par_left) / (2.*TUNING_STEP_THRESHOLD);
+    std::cout << "  par " << ipar << " width = " << (*step_sizes)(ipar) << std::endl;
 
     return;
 }
@@ -228,7 +237,6 @@ Double_t MCMCTune::BisectRoot(int ipar, Double_t par_left, Double_t par_right, D
     Double_t par_mid = (par_left + par_right) / 2.;
     Double_t lnl_mid = CalcPDF(parameters, ipar, par_mid);
     Double_t lnl_left = CalcPDF(parameters, ipar, par_left);
-    Double_t lnl_right = CalcPDF(parameters, ipar, par_right);
 
     // Loop until we hit the target precision
     while (TMath::Abs(lnl_mid - lnl_target) > TUNING_LNL_THRESHOLD) {
@@ -240,7 +248,6 @@ Double_t MCMCTune::BisectRoot(int ipar, Double_t par_left, Double_t par_right, D
         // Otherwise, if mid is on the same side as right, right = mid
         else {
             par_right = par_mid;
-            lnl_right = CalcPDF(parameters, ipar, par_right);
         }
         par_mid = (par_left + par_right) / 2.;
         lnl_mid = CalcPDF(parameters, ipar, par_mid);
@@ -254,9 +261,11 @@ Double_t MCMCTune::BisectRoot(int ipar, Double_t par_left, Double_t par_right, D
 void MCMCTune::TunePars() {
     lnl_current = CalcPDF(parameters);
     lnl_previous = lnl_current + 2.*TUNING_LNL_THRESHOLD; // make sure we at least take one pass
+    int epoch = 0;
 
     // Iterate until no significant changes are seen after moving all parameters
     while (TMath::Abs(lnl_current-lnl_previous) > TUNING_LNL_THRESHOLD) {
+        std::cout << "Tuning parameters, on epoch " << epoch++ << std::endl;
         lnl_previous = lnl_current;
         for (int ipar = 0; ipar < npars; ++ipar) {
             MinimizeParam(ipar);

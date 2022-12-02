@@ -13,7 +13,7 @@ covariance::covariance() {
 
 
 // Constructor with only the parameter count specified
-covariance::covariance(int npars, bool adapt) {
+covariance::covariance(int npars) {
     // Make sure we don't get bad input
     if (npars < 1) {
         std::cout << "ERROR: invalid number of parameters specified: " << npars << std::endl;
@@ -23,7 +23,6 @@ covariance::covariance(int npars, bool adapt) {
     // Initialize
     SetDefault();
     SetDim(npars);
-    adaptive = adapt;
 
     // Ensure all values are initialized at 0 instead of memory junk
     mean_vec->Zero();
@@ -62,7 +61,6 @@ void covariance::SetDefault() {
     step_vec = new TVectorD(2);
     step_vec->Zero();
     chain_loaded = false;
-    adaptive = false;
     return;
 }
 
@@ -166,13 +164,6 @@ void covariance::CalcCovariance() {
     // First need means in order to calculate covariance
     CalcMeans();
 
-    // Use loaded covmat if not adaptive
-    if (!adaptive) {
-        if (cov_mat_prev) { cov_mat = cov_mat_prev; return; }
-        std::cout << "ERROR: No proposal covmat loaded when running non-adaptive chains!" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
     // Make sure everything is reset
     cov_mat->Zero();
 
@@ -201,8 +192,6 @@ TMatrixDSym* covariance::UpdateCovariance() {
         std::cout << "ERROR: Chain of new data not loaded. "
                   << "Cannot update input covmat until LoadChain() is called." << std::endl;
         exit(EXIT_FAILURE);
-    } else if (!adaptive) {
-        return cov_mat_prev;
     }
 
     // Step count has to be stored in a float-point vector unfortunately
@@ -246,10 +235,6 @@ void covariance::CalcMeans() {
     } else if (!chain_loaded) {
         std::cout << "ERROR: No chain loaded to read from!" << std::endl;
         exit(EXIT_FAILURE);
-    } else if (!adaptive) { // use loaded means if not adaptive
-        if (mean_vec_prev) { mean_vec = mean_vec_prev; return; }
-        std::cout << "ERROR: No proposal means loaded when running non-adaptive chains!" << std::endl;
-        exit(EXIT_FAILURE);
     }
 
     // Make sure everything is reset
@@ -274,8 +259,6 @@ TVectorD* covariance::UpdateMeans() {
         std::cout << "ERROR: Chain of new data not loaded. "
                   << "Cannot update input means until LoadChain() is called." << std::endl;
         exit(EXIT_FAILURE);
-    } else if (!adaptive) {
-        return mean_vec_prev;
     }
 
     // Step count has to be stored in a float-point vector unfortunately

@@ -24,7 +24,7 @@ done
 
 if [ "$RUN" -lt 0 ]; then
     echo "Run number not specified!"
-    echo "Usage: ./runMCMC.sh -r [RUN] -b [BRANCH]"
+    echo "Usage: ./runMCMC.sh -r [RUN]"
     exit 1
 fi
 

@@ -15,7 +15,7 @@
 // Tuning threshold
 static const Double_t TUNING_LNL_THRESHOLD = 1.;
 static const Double_t TUNING_PAR_THRESHOLD = 0.000001;
-static const Double_t TUNING_STEP_THRESHOLD = 10.;
+static const Double_t TUNING_STEP_THRESHOLD = 16.;
 static const Double_t STARTING_STEP_SIZE = 10.;
 static const Double_t GOLDEN_RATIO = 0.5*(1.+TMath::Sqrt(5.));
 
@@ -25,6 +25,11 @@ public:
     MCMCTune();
     MCMCTune(ConfigManager* configs);
     ~MCMCTune();
+
+    void TuneMCMC();
+
+    TVectorD* GetStartingPars() { return parameters; }
+    TVectorD* GetStartingSteps() { return step_sizes; }
 private:
     void SetDefault();
     void ReadConfigs(ConfigManager* configs);
@@ -36,7 +41,6 @@ private:
 
     void TunePars();
     void TuneStepSizes();
-    void TuneMCMC();
 
     Double_t CalcPDF(TVectorD* par_vec, int ipar=-1, Double_t parval=0.);
 

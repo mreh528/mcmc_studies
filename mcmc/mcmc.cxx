@@ -23,7 +23,7 @@ mcmc::mcmc(ConfigManager* configs, int _nrun) {
     InitCovMats();
 
     // If we're starting from a previous run, initialize the chain from the old one
-    if (!new_chain) { LoadPrevChain(); }
+    if (!new_chain || custom_start) { LoadPrevChain(); }
 
 }
 
@@ -89,6 +89,8 @@ void mcmc::SetDefault() {
     naccepted = 0;
     new_chain = true;
     greedy = false;
+    custom_prop = false;
+    custom_start = false;
 
     // Setup RNG
     rng = new TRandom3();
@@ -138,7 +140,8 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun) {
         branch = configs->GetBranchNumber();
     }
     greedy = configs->GreedyAcceptance();
-    adaptive = configs->AdaptiveMetropolis();
+    custom_prop = configs->CustomProposal();
+    custom_start = configs->CustomStart();
     // If any of the above is uninitialized, tell user to check config file
     if (epsilon < 0. || npars < 1 || nsteps < 0 || branch < 0) {
         std::cout << "ERROR: One or more critical MCMC variables uninitialized." << std::endl;
@@ -147,22 +150,15 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun) {
     }
 
     // Check for I/O file naming
-    // First check for input proposal covmat
+    // First check for a proposal covmat from MCMC posteriors
     if (!new_chain) {
         if (configs->GetProposalCovDir().Length() > 0 &&
             configs->GetProposalCovFileBase().Length() > 0) {
             proposal_cov_dir = configs->GetProposalCovDir();
-            if (adaptive) {
-                proposal_cov_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",
-                                        proposal_cov_dir.Data(),
-                                        configs->GetProposalCovFileBase().Data(),
-                                        nsteps, npars, branch, nrun_previous);
-            } else {
-                proposal_cov_fname.Form("%s%s_npars%d_branch%d.root",
-                                        proposal_cov_dir.Data(),
-                                        configs->GetProposalCovFileBase().Data(),
-                                        npars, branch);
-            }
+            proposal_cov_fname.Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",
+                                    proposal_cov_dir.Data(),
+                                    configs->GetProposalCovFileBase().Data(),
+                                    nsteps, npars, branch, nrun_previous);
         } else {
             std::cout << "ERROR: Proposal cov not specified for continuing chain" << std::endl;
             exit(EXIT_FAILURE);
@@ -197,6 +193,14 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun) {
     } else {
         std::cout << "ERROR: No target distribution specified" << std::endl;
         exit(EXIT_FAILURE);
+    }
+    // Check for custom proposal matrix and overwrite current proposal name if so
+    if (custom_prop) {
+        proposal_cov_fname = configs->GetCustomProposalFName();
+    }
+    // Check for custom starting position file and overwrite current input chain if so
+    if (custom_start) {
+        input_chain_fname = configs->GetCustomStartFName();
     }
 
     return;
@@ -282,7 +286,7 @@ void mcmc::InitCovMats() {
     }
 
     // Check for input covariance matrix
-    if (proposal_cov_fname.Length() > 0 && !new_chain) {
+    if (proposal_cov_fname.Length() > 0) {
         proposal_cov_file = new TFile(proposal_cov_fname.Data(), "READ");
         if (!proposal_cov_file->IsOpen()) {
             std::cout << "ERROR: Invalid covmat file " << proposal_cov_fname << std::endl;
