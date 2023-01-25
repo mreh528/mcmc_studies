@@ -69,7 +69,7 @@ void covariance::SetDefault() {
 void covariance::SetDim(int npars) {
     // Watch out for bad input
     if (npars < 1) {
-        std::cout << "ERROR: invalid number of dimensions specified: " << ndims << std::endl;
+        std::cout << "ERROR: invalid number of dimensions specified: " << npars << std::endl;
         exit(EXIT_FAILURE);
     }
 

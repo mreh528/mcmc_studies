@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     ConfigManager configs(handler.fname_config.Data());
 
     std::cout << "Creating MCMC using configs specified in " << handler.fname_config.Data() << std::endl;
-    mcmc* markov_chain = new mcmc(&configs, handler.GetRunNumber());
+    mcmc* markov_chain = new mcmc(&configs);
 
     std::cout << "Starting MCMC" << std::endl;
     markov_chain->RunMCMC();

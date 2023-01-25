@@ -12,12 +12,12 @@ mcmc::mcmc() {
 
 
 // Constructor using input configuration file
-mcmc::mcmc(ConfigManager* configs, int _nrun) {
+mcmc::mcmc(ConfigManager* configs) {
     // Start by setting everything out-of-bounds so we can tell if something is missing
     SetDefault();
 
     // Read config file and set necessary variables
-    ReadConfigs(configs, _nrun);
+    ReadConfigs(configs);
 
     // Prepare covariance matrices needed for step proposal and lnl evaluation
     InitCovMats();
@@ -101,21 +101,8 @@ void mcmc::SetDefault() {
 
 
 // Constructor helper to read config file and set needed variables
-void mcmc::ReadConfigs(ConfigManager* configs, int _nrun) {
+void mcmc::ReadConfigs(ConfigManager* configs) {
     std::cout << "Reading configs..." << std::endl;
-
-    // Check for bad input
-    if (_nrun < 0) {
-        std::cout << "ERROR: Run number not specified.\n"
-                  << "       This should be specified at the command line\n"
-                  << "       using \'-r\' and \'-b\'" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Set base configs
-    nrun_current = _nrun;
-    nrun_previous = nrun_current - 1;
-    new_chain = (_nrun == 0);
 
     // Set necessary starting parameters
     if (configs->GetNPars() > 0) {
@@ -139,11 +126,17 @@ void mcmc::ReadConfigs(ConfigManager* configs, int _nrun) {
     if (configs->GetBranchNumber() > -1) {
         branch = configs->GetBranchNumber();
     }
+    // Run iteration number
+    if (configs->GetRunNumber() > -1) {
+        nrun_current = configs->GetRunNumber();
+        nrun_previous = nrun_current - 1;
+        new_chain = (nrun_current == 0);
+    }
     greedy = configs->GreedyAcceptance();
     custom_prop = configs->CustomProposal();
     custom_start = configs->CustomStart();
     // If any of the above is uninitialized, tell user to check config file
-    if (epsilon < 0. || npars < 1 || nsteps < 0 || branch < 0) {
+    if (epsilon < 0. || npars < 1 || nsteps < 0 || branch < 0 || nrun_current < 0) {
         std::cout << "ERROR: One or more critical MCMC variables uninitialized." << std::endl;
         std::cout << "       Please check your config file." << std::endl;
         exit(EXIT_FAILURE);

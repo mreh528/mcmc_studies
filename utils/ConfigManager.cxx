@@ -32,6 +32,7 @@ void ConfigManager::SetDefault() {
     main_output_directory = "";
     mcmc_file_base = "";
     covmat_file_base = "";
+    diagnostic_file_base = "";
     chain_directory = "";
     proposal_cov_directory = "";
     target_cov_directory = "";
@@ -40,6 +41,7 @@ void ConfigManager::SetDefault() {
     custom_start_fname = "";
     nsteps = -1;
     npars = -1;
+    nrun = -1;
     epsilon = -1.;
     greedy = false;
     custom_prop = false;
@@ -80,6 +82,11 @@ int ConfigManager::readConfig(const char* fname) {
                 std::getline(line_stream, key, ' '); // burn the '='
                 std::getline(line_stream, key);
                 covmat_file_base = key;
+            }
+            else if (key == "DIAGNOSTIC_FILE_BASE") {
+                std::getline(line_stream, key, ' '); // burn the '='
+                std::getline(line_stream, key);
+                diagnostic_file_base = key;
             }
             else if (key == "CHAIN_DIRECTORY") {
                 std::getline(line_stream, key, ' '); // burn the '='
@@ -125,6 +132,11 @@ int ConfigManager::readConfig(const char* fname) {
                 std::getline(line_stream, key, ' '); // burn the '='
                 std::getline(line_stream, key);
                 branch = std::stoi(key);
+            }
+            else if (key == "RUN") {
+                std::getline(line_stream, key, ' '); // burn the '='
+                std::getline(line_stream, key);
+                nrun = std::stoi(key);
             }
             else if (key == "EPSILON") {
                 std::getline(line_stream, key, ' '); // burn the '='

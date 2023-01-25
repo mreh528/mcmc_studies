@@ -24,11 +24,6 @@ int main(int argc, char* argv[]) {
     CommandHandler handler(argc, argv);
     ConfigManager configs(handler.fname_config.Data());
 
-    if (handler.GetRunNumber() < 0) {
-        std::cout << "ERROR: Run number not set at cmd line" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
     // Load our inputs based on the config file
     TString input_mcmc_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                                     configs.GetChainDir().Data(),\
@@ -36,22 +31,22 @@ int main(int argc, char* argv[]) {
                                     configs.GetNSteps(),\
                                     configs.GetNPars(),\
                                     configs.GetBranchNumber(),\
-                                    handler.GetRunNumber());
+                                    configs.GetRunNumber());
     TString prev_cov_fname = "";
-    if (handler.GetRunNumber() > 0) {
+    if (configs.GetRunNumber() > 0) {
         prev_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                               configs.GetProposalCovDir().Data(),\
                               configs.GetProposalCovFileBase().Data(),\
                               configs.GetNSteps(),\
                               configs.GetNPars(),\
                               configs.GetBranchNumber(),\
-                              handler.GetRunNumber()-1);
+                              configs.GetRunNumber()-1);
     }
 
     // Create the covariance object and load the inputs into it
     covariance* covmat = new covariance(configs.GetNPars());
     covmat->LoadChain(input_mcmc_fname);
-    if (handler.GetRunNumber() > 0) {
+    if (configs.GetRunNumber() > 0) {
         covmat->LoadCovPrev(prev_cov_fname);
     }
 
@@ -64,7 +59,7 @@ int main(int argc, char* argv[]) {
     post_steps(1) = 0.;
 
     // If it's a new chain, calc covariance from scratch
-    if (handler.GetRunNumber() == 0) {
+    if (configs.GetRunNumber() == 0) {
         covmat->CalcCovariance(); // Means calc'd implicitly
         post_means = covmat->GetMeanVec();
         post_cov = covmat->GetCovMat();
@@ -82,7 +77,7 @@ int main(int argc, char* argv[]) {
                                             configs.GetNSteps(),\
                                             configs.GetNPars(),\
                                             configs.GetBranchNumber(),\
-                                            handler.GetRunNumber()),\
+                                            configs.GetRunNumber()),\
                                             "RECREATE");
     std::cout << "Covariance matrix and mean vector generated. Saving output to "
               << output_cov_file->GetName() << "..." << std::endl;

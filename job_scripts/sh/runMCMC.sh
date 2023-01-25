@@ -37,7 +37,7 @@ echo "MCMC finished. Calculating posterior covariance..."
 
 echo ""
 echo "Calculated posterior covariance. Analyzing results..."
-./bin/analyzePosteriors -c ${CONFIG} -r ${RUN}
+./bin/analyzePosteriorCov -c ${CONFIG} -r ${RUN}
 
 echo "All Done!"
 

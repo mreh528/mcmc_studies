@@ -20,6 +20,9 @@
 *.pdf
 *.png
 
+# Ignore git stuff
+*.swp
+
 # Ignore everything in build and lib
 build/*
 lib/*

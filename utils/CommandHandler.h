@@ -15,11 +15,7 @@ public:
     TString fname_out;
     TString fname_config;
     bool verbose;
-
-    int GetRunNumber() { return nrun; }
 private:
-    // MCMC-specific variables
-    int nrun;
 };
 
 #endif

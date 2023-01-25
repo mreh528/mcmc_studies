@@ -1,6 +1,8 @@
 /*
  * Macro for calculating the "suboptimality factor" of an MCMC
- * following the direction of Roberts and Rosenthal (2006)
+ * following the direction of Roberts and Rosenthal (2006),
+ * among other convergence metrics that compare the empirical
+ * distribution to the true target
  */
 
 #include "TMath.h"
@@ -30,12 +32,6 @@ int main(int argc, char* argv[]) {
     CommandHandler handler(argc, argv);
     ConfigManager configs(handler.fname_config.Data());
 
-    // Want to be able to see how the suboptimality factor changes with each iteration
-    if (handler.GetRunNumber() < 0) {
-        std::cout << "ERROR: Run number not set at cmd line!" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
     // Form the posterior and target covariance file names based on the config file
     TString post_cov_fname = Form("%s%s_nsteps%d_npars%d_branch%d_run%d.root",\
                                   configs.GetProposalCovDir().Data(),\
@@ -43,7 +39,7 @@ int main(int argc, char* argv[]) {
                                   configs.GetNSteps(),\
                                   configs.GetNPars(),\
                                   configs.GetBranchNumber(),\
-                                  handler.GetRunNumber());
+                                  configs.GetRunNumber());
     TString target_cov_fname = Form("%s%s_npars%d_branch%d_target.root",\
                                     configs.GetTargetCovDir().Data(),\
                                     configs.GetTargetCovFileBase().Data(),\
